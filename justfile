@@ -1,4 +1,5 @@
 @update-contributors:
+	githubcontrib --help 2>/dev/null || echo 'githubcontrib not found, see https://github.com/mgechev/github-contributors-list' && false
 	echo 'Removing old CONTRIBUTORS.md'
 	mv CONTRIBUTORS.md CONTRIBUTORS.md.bak
 	echo 'Downloading a list of new contributors'
@@ -12,25 +13,34 @@
 	rm CONTRIBUTORS.md.bak
 
 run-test TEST:
-	cargo test --test {{TEST}}
+	just run-tests --test {{TEST}}
 
-debug TEST:
-	cargo test --test {{TEST}} --features debug
+only-run-test TEST NAME:
+	cargo test --test {{TEST}} {{NAME}}
 
 run-tests:
 	cargo test --features "yaml unstable"
 
-@bench: nightly
-	cargo bench && just remove-nightly
+debug TEST:
+	just run-test {{TEST}} --features "debug"
 
-nightly:
-	rustup override add nightly
+only-debug TEST NAME:
+	# @TODO-v3-beta: Add yaml feature back
+	cargo test --test {{TEST}} --features "debug unstable" {{NAME}}
+
+bench: set-nightly
+	cargo bench 
+	just remove-nightly
+
+set-nightly:
+	rustc -V | grep 'nightly' || rustup override add nightly
 
 remove-nightly:
-	rustup override remove
+	rustc -V | grep 'stable' || rustup override remove
 
-@lint: nightly
-	cargo build --features lints && just remove-nightly
+lint: set-nightly
+	cargo build --features lints
+	just remove-nightly
 
 clean:
 	cargo clean
