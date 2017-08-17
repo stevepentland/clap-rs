@@ -1,7 +1,7 @@
 extern crate clap;
 extern crate regex;
 
-use clap::{App, Arg, SubCommand, AppSettings, ErrorKind};
+use clap::{App, Arg, SubCommand, AppSettings, ErrorKind, ArgSettings};
 
 include!("../clap-test.rs");
 

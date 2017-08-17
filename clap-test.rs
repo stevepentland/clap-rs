@@ -5,7 +5,7 @@ mod test {
 
     use regex::Regex;
 
-    use clap::{App, Arg, SubCommand, ArgGroup};
+    use clap::{App, Arg, SubCommand, ArgGroup, ArgSettings};
 
     fn compare<S, S2>(l: S, r: S2) -> bool
         where S: AsRef<str>,

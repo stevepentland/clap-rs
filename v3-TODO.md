@@ -35,6 +35,7 @@
 - [x] App::mut_arg
 - [x] Serde
 - [ ] CustomDerive
+  - [ ] structopt
 - [ ] Enums as keys
 - [ ] Color Redux
 - [ ] Derive all common traits
