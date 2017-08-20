@@ -1789,7 +1789,7 @@ impl<'a, 'b> Arg<'a, 'b> {
                 .nth(0)
                 .expect("Failed to get value_delimiter from arg"),
         );
-        self.unset_setting(ArgSettings::ValueDelimiterNotSet)
+        self.unset(ArgSettings::ValueDelimiterNotSet)
             .set(ArgSettings::TakesValue)
             .set(ArgSettings::UseValueDelimiter)
     }
@@ -1871,7 +1871,7 @@ impl<'a, 'b> Arg<'a, 'b> {
 
         self = self.set(ArgSettings::TakesValue);
         if self.is_set(ArgSettings::ValueDelimiterNotSet) {
-            self = self.unset_setting(ArgSettings::ValueDelimiterNotSet)
+            self = self.unset(ArgSettings::ValueDelimiterNotSet)
                 .set(ArgSettings::UseValueDelimiter);
         }
         self
@@ -2486,11 +2486,11 @@ impl<'a, 'b> Arg<'a, 'b> {
             }
             self.setb(ArgSettings::TakesValue);
             self.setb(ArgSettings::UseValueDelimiter);
-            self.unset_setting(ArgSettings::ValueDelimiterNotSet)
+            self.unset(ArgSettings::ValueDelimiterNotSet)
         } else {
             self.value_delimiter = None;
             self.unsetb(ArgSettings::UseValueDelimiter);
-            self.unset_setting(ArgSettings::ValueDelimiterNotSet)
+            self.unset(ArgSettings::ValueDelimiterNotSet)
         }
     }
 
@@ -2514,9 +2514,9 @@ impl<'a, 'b> Arg<'a, 'b> {
             self.setb(ArgSettings::UseValueDelimiter);
             self.set(ArgSettings::RequireDelimiter)
         } else {
-            self = self.unset_setting(ArgSettings::RequireDelimiter);
+            self = self.unset(ArgSettings::RequireDelimiter);
             self.unsetb(ArgSettings::UseValueDelimiter);
-            self.unset_setting(ArgSettings::RequireDelimiter)
+            self.unset(ArgSettings::RequireDelimiter)
         }
     }
 
@@ -2526,7 +2526,7 @@ impl<'a, 'b> Arg<'a, 'b> {
         if g {
             self.set(ArgSettings::Global)
         } else {
-            self.unset_setting(ArgSettings::Global)
+            self.unset(ArgSettings::Global)
         }
     }
 
@@ -2536,7 +2536,7 @@ impl<'a, 'b> Arg<'a, 'b> {
         if h {
             self.set(ArgSettings::Hidden)
         } else {
-            self.unset_setting(ArgSettings::Hidden)
+            self.unset(ArgSettings::Hidden)
         }
     }
 
@@ -2548,7 +2548,7 @@ impl<'a, 'b> Arg<'a, 'b> {
             self.set(ArgSettings::EmptyValues)
         } else {
             self = self.set(ArgSettings::TakesValue);
-            self.unset_setting(ArgSettings::EmptyValues)
+            self.unset(ArgSettings::EmptyValues)
         }
     }
 
@@ -2559,7 +2559,7 @@ impl<'a, 'b> Arg<'a, 'b> {
         if multi {
             self.set(ArgSettings::Multiple)
         } else {
-            self.unset_setting(ArgSettings::Multiple)
+            self.unset(ArgSettings::Multiple)
         }
     }
 
@@ -2569,7 +2569,7 @@ impl<'a, 'b> Arg<'a, 'b> {
         if hide {
             self.set(ArgSettings::HidePossibleValues)
         } else {
-            self.unset_setting(ArgSettings::HidePossibleValues)
+            self.unset(ArgSettings::HidePossibleValues)
         }
     }
 
@@ -2579,7 +2579,7 @@ impl<'a, 'b> Arg<'a, 'b> {
         if tv {
             self.set(ArgSettings::TakesValue)
         } else {
-            self.unset_setting(ArgSettings::TakesValue)
+            self.unset(ArgSettings::TakesValue)
         }
     }
 
@@ -2589,7 +2589,7 @@ impl<'a, 'b> Arg<'a, 'b> {
         if a {
             self.set(ArgSettings::AllowHyphenValues)
         } else {
-            self.unset_setting(ArgSettings::AllowHyphenValues)
+            self.unset(ArgSettings::AllowHyphenValues)
         }
     }
 
@@ -2600,7 +2600,7 @@ impl<'a, 'b> Arg<'a, 'b> {
     /// Deprecated
     #[deprecated(since = "2.24.1", note = "use Arg::from or serde instead")]
     #[cfg(feature = "yaml")]
-    pub fn from_yaml(y: &BTreeMap<Yaml, Yaml>) -> Arg<'n, 'e> { Arg::from(y) }
+    pub fn from_yaml(y: &BTreeMap<Yaml, Yaml>) -> Arg<'a, 'b> { Arg::from(y) }
 
     /// Deprecated
     #[deprecated(since = "2.24.1", note = "use Arg::from instead")]
@@ -2612,7 +2612,7 @@ impl<'a, 'b> Arg<'a, 'b> {
         if l {
             self.set(ArgSettings::Last)
         } else {
-            self.unset_setting(ArgSettings::Last)
+            self.unset(ArgSettings::Last)
         }
     }
 
@@ -2622,7 +2622,7 @@ impl<'a, 'b> Arg<'a, 'b> {
         if r {
             self.set(ArgSettings::Required)
         } else {
-            self.unset_setting(ArgSettings::Required)
+            self.unset(ArgSettings::Required)
         }
     }
 
@@ -2633,7 +2633,7 @@ impl<'a, 'b> Arg<'a, 'b> {
             self.unsetb(ArgSettings::EmptyValues);
             self.set(ArgSettings::RequireEquals)
         } else {
-            self.unset_setting(ArgSettings::RequireEquals)
+            self.unset(ArgSettings::RequireEquals)
         }
     }
 
@@ -2643,7 +2643,7 @@ impl<'a, 'b> Arg<'a, 'b> {
         if hide {
             self.set(ArgSettings::HideDefaultValue)
         } else {
-            self.unset_setting(ArgSettings::HideDefaultValue)
+            self.unset(ArgSettings::HideDefaultValue)
         }
     }
 }

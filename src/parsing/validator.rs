@@ -21,7 +21,6 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c> {
     ) -> ClapResult<()> {
         debugln!("Validator::validate;");
         let mut reqs_validated = false;
-        try!(self.add_defaults(matcher));
         if let ParseResult::Opt(a) = needs_val_of {
             debugln!("Validator::validate: needs_val_of={:?}", a);
             let o = opts!(self.app).find(|o| o.name == a)
@@ -58,7 +57,7 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c> {
             try!(self.validate_required(matcher));
         }
         try!(self.validate_matched_args(matcher));
-        matcher.usage(self.create_usage_with_title(&[]));
+        // matcher.usage(self.create_usage_with_title(&[]));
 
         Ok(())
     }

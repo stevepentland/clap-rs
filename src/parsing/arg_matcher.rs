@@ -65,7 +65,7 @@ impl<'a> ArgMatcher<'a> {
 
     pub fn is_empty(&self) -> bool { self.0.args.is_empty() }
 
-    pub fn usage(&mut self, usage: String) { self.0.usage = Some(usage); }
+    // pub fn usage(&mut self, usage: String) { self.0.usage = Some(usage); }
 
     pub fn arg_names(&self) -> Keys<&'a str, MatchedArg> { self.0.args.keys() }
 

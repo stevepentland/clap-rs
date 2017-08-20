@@ -16,7 +16,7 @@ use serde::{Serialize, Deserialize};
 use yaml_rust::Yaml;
 
 // Internal
-use {Arg, ArgGroup, AppSettings};
+use {Arg, ArgGroup, AppSettings, ArgSettings};
 use builders::app_settings::AppFlags;
 use parsing::{Parser, ArgMatcher};
 use matched::ArgMatches;
@@ -729,7 +729,10 @@ impl<'a, 'b> App<'a, 'b> {
     /// ```
     /// [argument]: ./struct.Arg.html
     pub fn arg<A: Into<Arg<'a, 'b>>>(mut self, a: A) -> Self {
-        self.args.push(a.into());
+        // @DOCS @TODO-v3-release: _unified_order doesn't get set if using serde
+        let mut arg = a.into();
+        arg._unified_order = self.args.len() + self.global_args.len();
+        self.args.push(arg);
         self
     }
 
@@ -748,8 +751,10 @@ impl<'a, 'b> App<'a, 'b> {
     /// ```
     /// [arguments]: ./struct.Arg.html
     pub fn args(mut self, args: &[Arg<'a, 'b>]) -> Self {
-        for arg in args {
-            self.args.push(arg.to_owned());
+        for a in args {
+            let mut arg = a.to_owned();
+            arg._unified_order = self.args.len() + self.global_args.len();
+            self.args.push(arg);
         }
         self
     }
@@ -1390,15 +1395,13 @@ impl<'a, 'b> App<'a, 'b> {
         // that was used to execute the program. This is because a program called
         // ./target/release/my_prog -a will have two arguments, './target/release/my_prog', '-a'
         // but we don't want to display the full path when displaying help messages and such
-        if !self.settings.contains(&AppSettings::NoBinaryName) {
+        if !(self.settings.contains(&AppSettings::NoBinaryName) ||
+                 self.global_settings.contains(&AppSettings::NoBinaryName))
+        {
             if let Some(name) = it.next() {
                 let bn_os = name.into();
                 let p = Path::new(&*bn_os);
-                if let Some(f) = p.file_name() {
-                    if let Some(s) = f.to_os_string().to_str() {
-                        self.bin_name = Some(s.to_owned());
-                    }
-                }
+                self.bin_name = Some(p.file_name().map(|f| f.to_os_string()).unwrap_or(bn_os.clone()).to_str().unwrap_or("").to_owned());
             }
         }
 
@@ -1437,17 +1440,12 @@ impl<'a, 'b> App<'a, 'b> {
         // ./target/release/my_prog -a will have two arguments, './target/release/my_prog', '-a'
         // but we don't want to display the full path when displaying help messages and such
         if !(self.settings.contains(&AppSettings::NoBinaryName) ||
-                 self.settings.contains(&AppSettings::NoBinaryName)) &&
-            utils::get_bin_name().is_none()
+                 self.global_settings.contains(&AppSettings::NoBinaryName))
         {
             if let Some(name) = it.next() {
                 let bn_os = name.into();
                 let p = Path::new(&*bn_os);
-                if let Some(f) = p.file_name() {
-                    if let Some(s) = f.to_os_string().to_str() {
-                        self.bin_name = Some(s.to_owned());
-                    }
-                }
+                self.bin_name = Some(p.file_name().map(|f| f.to_os_string()).unwrap_or(bn_os.clone()).to_str().unwrap_or("").to_owned());
             }
         }
 
@@ -1541,6 +1539,16 @@ impl<'a, 'b> App<'a, 'b> {
                 }
             }
         }
+
+        let mut pos = 1;
+        for a in self.args.iter_mut().chain(self.global_args.iter_mut()) {
+            if a.index.is_none() && !a._has_switch() {
+                a.index = Some(pos);
+                pos += 1;
+            }
+            a._build();
+        }
+
         if !self.subcommands.is_empty() && !self.is_set(AppSettings::DisableHelpSubcommand) 
         {
             debugln!("App::_build: Building help subcommand");

@@ -36,7 +36,7 @@ mod test {
         err.write_to(&mut buf).unwrap();
         let content = buf.into_inner();
         let left = String::from_utf8(content).unwrap();
-        assert_eq!(stderr, err.use_stderr());
+        assert_eq!(stderr, err.use_stderr(), "{:?}", err);
         compare(left, right)
     }
 

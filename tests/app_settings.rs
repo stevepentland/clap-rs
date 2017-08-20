@@ -329,7 +329,7 @@ fn delim_values_only_pos_follows_with_delim() {
         .args(&[Arg::from("-f [flag] 'some opt'"),
                 Arg::from("[arg]... 'some arg'").use_delimiter(true)])
         .get_matches_from_safe(vec!["", "--", "-f", "-g,x"]);
-    assert!(r.is_ok());
+    assert!(r.is_ok(), "{:?}", r.unwrap_err());
     let m = r.unwrap();
     assert!(m.is_present("arg"));
     assert!(!m.is_present("f"));

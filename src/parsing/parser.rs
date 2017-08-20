@@ -121,7 +121,7 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
                     p.app._settings.unset(AS::NeedsLongHelp);
                 }
             }
-            if a.index.is_some() || (a.short.is_none() && a.long.is_none()) {
+            if !a._has_switch() {
                 let i = if a.index.is_none() {
                     (p.positionals.len() + 1)
                 } else {
@@ -590,6 +590,10 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
                 "Parser::get_matches_with: Low index multiples...{:?}",
                 low_index_mults
             );
+            debugln!(
+                "Parser::get_matches_with: Allow Missing Pos...{:?}",
+                missing_pos
+            );
             if low_index_mults || missing_pos {
                 if let Some(na) = it.peek() {
                     let n = (*na).clone().into();
@@ -726,6 +730,7 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
             });
         }
 
+        try!(self.add_defaults(matcher));
         self.validate(needs_val_of, subcmd_name, matcher)
     }
 
@@ -905,41 +910,49 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
     {
         use std::fmt::Write;
         debugln!("Parser::parse_subcommand;");
-        let mut mid_string = String::new();
-        if !self.is_set(AS::SubcommandsNegateReqs) {
-            let mut hs: Vec<&str> = self.required.iter().map(|n| &**n).collect();
-            for k in matcher.arg_names() {
-                hs.push(k);
-            }
-            let reqs = self.get_required_usage_from(&hs, Some(matcher), None, false);
+        // @TODO-v3-alpha: remove usage generation until time to display usage
+        //
+        // let mut mid_string = String::new();
+        // if !self.is_set(AS::SubcommandsNegateReqs) {
+        //     let mut hs: Vec<&str> = self.required.iter().map(|n| &**n).collect();
+        //     for k in matcher.arg_names() {
+        //         hs.push(k);
+        //     }
+        //     let reqs = self.get_required_usage_from(&hs, Some(matcher), None, false);
 
-            for s in &reqs {
-                write!(&mut mid_string, " {}", s).expect(INTERNAL_ERROR_MSG);
-            }
-        }
-        mid_string.push_str(" ");
+        //     for s in &reqs {
+        //         write!(&mut mid_string, " {}", s).expect(INTERNAL_ERROR_MSG);
+        //     }
+        // }
+        // mid_string.push_str(" ");
         self.propagate_settings_to(sc_name);
         if let Some(ref mut sc) = find_subcommand_mut!(self.app, sc_name)
         {
             let mut sc_matcher = ArgMatcher::new();
+            // @TODO-v3-alpha: remove usage generation until time to display usage
+            //
             // bin_name should be parent's bin_name + [<reqs>] + the sc's name separated by
             // a space
-            sc._usage = Some(format!(
-                "{}{}{}",
-                self.app.bin_name.as_ref().unwrap_or(&String::new()),
-                if self.app.bin_name.is_some() {
-                    &*mid_string
-                } else {
-                    ""
-                },
-                &*sc.name
-            ));
+            // sc._usage = Some(format!(
+            //     "{}{}{}",
+            //     self.app.bin_name.as_ref().unwrap_or(&String::new()),
+            //     if self.app.bin_name.is_some() {
+            //         &*mid_string
+            //     } else {
+            //         ""
+            //     },
+            //     &*sc.name
+            // ));
             sc.bin_name = Some(format!(
                 "{}{}{}",
                 self.app.bin_name.as_ref().unwrap_or(&String::new()),
                 if self.app.bin_name.is_some() { " " } else { "" },
                 &*sc.name
             ));
+
+            // Ensure all args are built and ready to parse
+            sc._build();
+
             debugln!(
                 "Parser::parse_subcommand: About to parse sc={}",
                 sc.name
@@ -1300,9 +1313,11 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
     //
 
     pub fn add_defaults(&mut self, matcher: &mut ArgMatcher<'a>) -> ClapResult<()> {
+        debugln!("Parser::add_defaults");
         macro_rules! add_val {
             (@default $_self:ident, $a:ident, $m:ident) => {
                 if let Some(ref val) = $a.default_value {
+                    debugln!("Parser::add_defaults:iter:{}: found default val;", $a.name);
                     if $m.get($a.name).is_none() {
                         try!($_self.add_val_to_arg($a, OsStr::new(val), $m));
 
@@ -1348,9 +1363,11 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
         }
 
         for o in opts!(self.app) {
+            debugln!("Parser::add_defaults:iter:{};", o.name);
             add_val!(self, o, matcher);
         }
         for p in positionals!(self.app) {
+            debugln!("Parser::add_defaults:iter:{};", p.name);
             add_val!(self, p, matcher);
         }
         Ok(())

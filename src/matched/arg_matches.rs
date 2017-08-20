@@ -64,8 +64,9 @@ pub struct ArgMatches<'a> {
     pub args: HashMap<&'a str, MatchedArg>,
     #[doc(hidden)]
     pub subcommand: Option<Box<SubCommand<'a>>>,
-    #[doc(hidden)]
-    pub usage: Option<String>,
+    // @TODO-v3-release: add way to get default usage from App struct
+    // #[doc(hidden)]
+    // pub usage: Option<String>,
 }
 
 impl<'a> Default for ArgMatches<'a> {
@@ -73,7 +74,7 @@ impl<'a> Default for ArgMatches<'a> {
         ArgMatches {
             args: HashMap::new(),
             subcommand: None,
-            usage: None,
+            // usage: None,
         }
     }
 }
@@ -515,21 +516,11 @@ impl<'a> ArgMatches<'a> {
             .map_or(("", None), |sc| (&sc.name[..], Some(&sc.matches)))
     }
 
-    /// Returns a string slice of the usage statement for the [`App`] or [`SubCommand`]
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// # use clap::{App, Arg, SubCommand};
-    /// let app_m = App::new("myprog")
-    ///     .subcommand(App::new("test"))
-    ///     .get_matches();
-    ///
-    /// println!("{}", app_m.usage());
-    /// ```
-    /// [`Subcommand`]: ./struct.SubCommand.html
-    /// [`App`]: ./struct.App.html
-    pub fn usage(&self) -> &str { self.usage.as_ref().map_or("", |u| &u[..]) }
+    // ------- DEPRECATIONS -----------
+
+    /// Deprecated
+    #[deprecated(since = "2.27.0", note = "use App::get_usage instead")]
+    pub fn usage(&self) -> &str { unimplemented!() }
 }
 
 
