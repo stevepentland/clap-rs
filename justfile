@@ -1,3 +1,9 @@
+pat=''
+args=''
+flags=''
+threads='4'
+features=''
+
 @update-contributors:
 	githubcontrib --help 2>/dev/null || echo 'githubcontrib not found, see https://github.com/mgechev/github-contributors-list' && false
 	echo 'Removing old CONTRIBUTORS.md'
@@ -13,20 +19,13 @@
 	rm CONTRIBUTORS.md.bak
 
 run-test TEST:
-	just run-tests --test {{TEST}}
-
-only-run-test TEST NAME:
-	cargo test --test {{TEST}} {{NAME}}
+	RUST_TEST_THREADS={{threads}} {{flags}} cargo test --features "{{features}}" --test {{TEST}} {{pat}} -- {{args}}
 
 run-tests:
-	cargo test --features "yaml unstable"
+	RUST_TEST_THREADS={{threads}} {{flags}} cargo test --features "{{features}}" {{pat}} -- {{args}}
 
 debug TEST:
-	just run-test {{TEST}} --features "debug"
-
-only-debug TEST NAME:
-	# @TODO-v3-beta: Add yaml feature back
-	cargo test --test {{TEST}} --features "debug unstable" {{NAME}}
+	RUST_TEST_THREADS={{threads}} {{flags}} cargo test --features "debug {{features}}" --test {{TEST}} {{pat}} -- {{args}}
 
 bench: set-nightly
 	cargo bench 
