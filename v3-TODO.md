@@ -5,7 +5,7 @@
   - [x] ArgGroup
   - [x] Arg
   - [ ] Make tests pass
-    - [ ] app_settings
+    - [x] app_settings
     - [ ] arg_aliases
     - [x] borrowed
     - [ ] completions

@@ -735,7 +735,7 @@ impl<'a, 'b> App<'a, 'b> {
         // @DOCS @TODO-v3-release: _derived_order doesn't get set if using serde
         let mut arg = a.into();
         arg._derived_order = self.args.len() + self.global_args.len();
-        self.args.push(arg);
+        self._add_arg(arg);
         self
     }
 
@@ -758,7 +758,7 @@ impl<'a, 'b> App<'a, 'b> {
         for a in args {
             let mut arg = a.to_owned();
             arg._derived_order = self.args.len() + self.global_args.len();
-            self.args.push(arg);
+            self._add_arg(arg);
         }
         self
     }
@@ -792,6 +792,15 @@ impl<'a, 'b> App<'a, 'b> {
         self
     }
 
+    #[doc(hidden)]
+    #[inline]
+    fn _add_arg(&mut self, arg: Arg<'a, 'b>) {
+        if arg.is_set(ArgSettings::Global) {
+            self.global_args.push(arg);
+        } else {
+            self.args.push(arg);
+        }
+    }
     
     /// @DOCS @TODO-v3-release: add docs
     pub fn mut_arg<F>(mut self, arg: &str, f: F) -> Self
@@ -1477,6 +1486,7 @@ impl<'a, 'b> App<'a, 'b> {
         };
 
         if should_propagate {
+            debugln!("App::_do_parse: propagating global values");
             for a in self.global_args.iter().map(|a| a.name) {
                 matcher.propagate(a);
             }
@@ -1504,7 +1514,7 @@ impl<'a, 'b> App<'a, 'b> {
     // Add an arg without consuming self
     #[doc(hidden)]
     pub fn _argb<A: Into<Arg<'a, 'b>>>(&mut self, a: A) {
-        self.args.push(a.into());
+        self._add_arg(a.into());
     }
 
     // Make App ready for parsing. This should be called after all args are built but before parsing
@@ -1570,13 +1580,13 @@ impl<'a, 'b> App<'a, 'b> {
             .long("help")
             .short("h")
             .help("Prints help information");
-        self.args.push(help);
+        self._add_arg(help);
         debugln!("App::_create_help_and_version: Building --version");
         let mut ver = Arg::new("version")
             .long("version")
             .help("Prints version information")
             .short("V");
-        self.args.push(ver);
+        self._add_arg(ver);
     }
 
     //

@@ -19,7 +19,7 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c> {
         subcmd_name: Option<String>,
         matcher: &mut ArgMatcher<'a>,
     ) -> ClapResult<()> {
-        debugln!("Validator::validate;");
+        debugln!("Validator::validate:{};", self.app.name);
         let mut reqs_validated = false;
         if let ParseResult::Opt(a) = needs_val_of {
             debugln!("Validator::validate: needs_val_of={:?}", a);
