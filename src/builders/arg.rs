@@ -2406,7 +2406,7 @@ impl<'a, 'b> Arg<'a, 'b> {
 
     #[doc(hidden)]
     pub fn _longest_filter(&self) -> bool {
-        self.long.is_some() || self.is_set(ArgSettings::TakesValue) || self.index.is_some()
+        !self._settings.is_set(ArgSettings::NextLineHelp) && (self.long.is_some() || self.is_set(ArgSettings::TakesValue) || !self._has_switch())
     }
 
     #[doc(hidden)]
@@ -2420,9 +2420,13 @@ impl<'a, 'b> Arg<'a, 'b> {
     }
 
     #[doc(hidden)]
-    fn _write_values(&self, f: &mut Formatter) -> fmt::Result {
+    fn _write_values(&self, f: &mut Formatter, positional: bool) -> fmt::Result {
+        debugln!("Arg::_write_values:{};", self.name);
+        let min_vals = self.min_values.unwrap_or(1);
+        let req = self._settings.is_set(ArgSettings::Required);
         // Write the values such as <name1> <name2>
         if let Some(ref vec) = self.value_names {
+            debugln!("Arg::_write_values:{}: has value names;", self.name);
             let mut it = vec.iter().peekable();
             while let Some((_, val)) = it.next() {
                 try!(write!(f, "<{}>", val));
@@ -2435,27 +2439,38 @@ impl<'a, 'b> Arg<'a, 'b> {
                 try!(write!(f, "..."));
             }
         } else if let Some(num) = self.number_of_values {
+            debugln!("Arg::_write_values:{}: has {} number of values;", self.name, num);
             let mut it = (0..num).peekable();
+            let mut i = 0;
             while let Some(_) = it.next() {
-                try!(write!(f, "<{}>", self.name));
+                let (open, close) = if i >= min_vals { ("[", "]") } else { ("<", ">") };
+                try!(write!(f, "{}{}{}", open, self.name, close));
                 if it.peek().is_some() {
                     try!(write!(f, " "));
                 }
+                i += 1;
             }
             if self.is_set(ArgSettings::Multiple) && num == 1 {
                 try!(write!(f, "..."));
             }
         } else {
-            try!(write!(
-                f,
-                "<{}>{}",
-                self.name,
-                if self.is_set(ArgSettings::Multiple) {
-                    "..."
-                } else {
-                    ""
-                }
-            ));
+            debugln!("Arg::_write_values:{}: regular value;", self.name);
+            let mult = if self.is_set(ArgSettings::Multiple) {
+                "..."
+            } else {
+                ""
+            };
+            let (open, close) = if min_vals == 0 || (positional && !req) { ("[", "]") } else { ("<", ">") };
+            if positional {
+                try!(write!(
+                    f,
+                    "{}{}{}{}",
+                    open,
+                    self.name,
+                    close,
+                    mult
+                ));
+            }
         }
 
         Ok(())
@@ -2885,7 +2900,7 @@ impl<'n, 'e> Display for Arg<'n, 'e> {
                 // Write the name such --long or -l
                 try!(self._write_switch(f, sep));
 
-                try!(self._write_values(f));
+                try!(self._write_values(f, false));
             } else {
                 // Display for Flags
                 try!(self._write_switch(f, ""));
@@ -2893,7 +2908,7 @@ impl<'n, 'e> Display for Arg<'n, 'e> {
         } else {
             debugln!("Arg::fmt:{}:positional;", self.name);
             // Display for Positionals
-            try!(self._write_values(f));
+            try!(self._write_values(f, true));
         }
 
         Ok(())

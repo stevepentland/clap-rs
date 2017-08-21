@@ -180,22 +180,28 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
         self.longest = 2;
         let mut arg_v = Vec::with_capacity(10);
         for arg in args.filter(|arg| {
-            !(arg.is_set(ArgSettings::Hidden)) || arg.is_set(ArgSettings::NextLineHelp)
+            !arg.is_set(ArgSettings::Hidden)
         })
         {
-            if arg._longest_filter() {
-                self.longest = cmp::max(self.longest, str_width(arg.to_string().as_str()));
+            let arg_str = arg.to_string();
+            let arg_len = str_width(&*arg_str);
+            // If it's NextLineHelp, but we don't care to compute how long because it may be
+            // NextLineHelp on purpose *because* it's so long and would throw off all other
+            // args alignment
+            if !arg._settings.is_set(ArgSettings::NextLineHelp) {
+                self.longest = cmp::max(self.longest, arg_len);
             }
-            arg_v.push(arg)
+            arg_v.push((arg, arg_str, arg_len));
         }
         let mut first = true;
-        for arg in arg_v {
+        for (arg, arg_str, arg_len) in arg_v {
+            debugln!("HelpWriter::write_args_unsorted:iter:{}:", arg.name);
             if first {
                 first = false;
             } else {
                 try!(w.write_all(b"\n"));
             }
-            try!(self.write_arg(w, arg));
+            try!(self.write_arg(w, arg, &*arg_str, arg_len));
         }
         Ok(())
     }
@@ -212,29 +218,29 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
         let mut ord_m = VecMap::new();
         // Determine the longest
         for arg in args.filter(|arg| {
+            !arg.is_set(ArgSettings::Hidden)
+        })
+        {
+            let arg_str = arg.to_string();
+            let arg_len = str_width(&*arg_str);
             // If it's NextLineHelp, but we don't care to compute how long because it may be
             // NextLineHelp on purpose *because* it's so long and would throw off all other
             // args alignment
-            !arg.is_set(ArgSettings::Hidden) || arg.is_set(ArgSettings::NextLineHelp)
-        })
-        {
-            if arg._longest_filter() {
-                debugln!("HelpWriter::write_args: Current Longest...{}", self.longest);
-                self.longest = cmp::max(self.longest, str_width(arg.to_string().as_str()));
-                debugln!("HelpWriter::write_args: New Longest...{}", self.longest);
+            if !arg._settings.is_set(ArgSettings::NextLineHelp) {
+                self.longest = cmp::max(self.longest, arg_len);
             }
             let btm = ord_m.entry(arg.disp_ord()).or_insert(BTreeMap::new());
-            btm.insert(arg.name, arg);
+            btm.insert(arg.name, (arg, arg_str, arg_len));
         }
         let mut first = true;
         for btm in ord_m.values() {
-            for arg in btm.values() {
+            for &(arg, ref arg_str, arg_len) in btm.values() {
                 if first {
                     first = false;
                 } else {
                     try!(w.write_all(b"\n"));
                 }
-                try!(self.write_arg(w, arg));
+                try!(self.write_arg(w, arg, &*arg_str, arg_len));
             }
         }
         Ok(())
@@ -249,21 +255,26 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
     }
 
     /// Writes help for an argument to the wrapped stream.
-    fn write_arg<W: Write>(&mut self, w: &mut W, arg: &Arg<'a, 'b>) -> io::Result<()> {
-        debugln!("HelpWriter::write_arg;");
-        try!(self.short(w, arg));
-        try!(self.long(w, arg));
-        let spec_vals = try!(self.val(w, arg));
-        try!(self.help(w, arg, &*spec_vals));
+    fn write_arg<W: Write>(&mut self, w: &mut W, arg: &Arg<'a, 'b>, arg_str: &str, arg_len: usize) -> io::Result<()> {
+        debugln!("HelpWriter::write_arg:{};", arg.name);
+        try!(self.short(w, arg, arg_str));
+        try!(color!(self, w, "{}", arg_str, good));
+        // try!(self.long(w, arg));
+        let spec_vals = self.spec_vals(arg);
+        try!(self.help(w, arg, &*spec_vals, arg_len));
         Ok(())
     }
 
     /// Writes argument's short command to the wrapped stream.
-    fn short<W: Write>(&mut self, w: &mut W, arg: &Arg<'a, 'b>) -> io::Result<()> {
-        debugln!("HelpWriter::short;");
+    fn short<W: Write>(&mut self, w: &mut W, arg: &Arg<'a, 'b>, arg_str: &str) -> io::Result<()> {
+        debugln!("HelpWriter::short:{};", arg.name);
         try!(write!(w, "{}", TAB));
         if let Some(s) = arg.short {
-            color!(self, w, "-{}", s, good)
+            if arg.long.is_some() {
+                color!(self, w, "-{}, ", s, good)
+            } else {
+                color!(self, w, "{}", arg_str, good)
+            }
         } else if arg._has_switch() {
             write!(w, "{}", TAB)
         } else {
@@ -271,74 +282,109 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
         }
     }
 
-    /// Writes argument's long command to the wrapped stream.
-    fn long<W: Write>(&mut self, w: &mut W, arg: &Arg<'a, 'b>) -> io::Result<()> {
-        debugln!("HelpWriter::long;");
-        if !arg._has_switch() {
-            return Ok(());
-        }
-        if arg.is_set(ArgSettings::TakesValue) {
-            if let Some(l) = arg.long {
-                if arg.short.is_some() {
-                    try!(write!(w, ", "));
-                }
-                try!(color!(self, w, "--{}", l, good))
-            }
+    // /// Writes argument's long command to the wrapped stream.
+    // fn long<W: Write>(&mut self, w: &mut W, arg: &Arg<'a, 'b>) -> io::Result<()> {
+    //     debugln!("HelpWriter::long:{};", arg.name);
+    //     if !arg._has_switch() {
+    //         return Ok(());
+    //     }
+    //     if arg.is_set(ArgSettings::TakesValue) {
+    //         if let Some(l) = arg.long {
+    //             if arg.short.is_some() {
+    //                 try!(write!(w, ", "));
+    //             }
+    //             try!(color!(self, w, "--{}", l, good))
+    //         }
 
-            let sep = if arg.is_set(ArgSettings::RequireEquals) {
-                "="
-            } else {
-                " "
-            };
-            try!(write!(w, "{}", sep));
-        } else if let Some(l) = arg.long {
-            if arg.short.is_some() {
-                try!(write!(w, ", "));
-            }
-            try!(color!(self, w, "--{}", l, good));
+    //         let sep = if arg.is_set(ArgSettings::RequireEquals) { "=" } else { " " };
+    //         try!(write!(w, "{}", sep));
+    //     } else if let Some(l) = arg.long {
+    //         if arg.short.is_some() {
+    //             try!(write!(w, ", "));
+    //         }
+    //         try!(color!(self, w, "--{}", l, good));
+    //     }
+    //     Ok(())
+    // }
+
+    // /// Writes argument's possible values to the wrapped stream.
+    // fn val<W: Write>(&mut self, w: &mut W, arg: &Arg<'a, 'b>) -> Result<String, io::Error> {
+    //     debugln!("HelpWriter::val:{}", arg.name);
+    //     if arg.is_set(ArgSettings::TakesValue) {
+    //         if let Some(ref vec) = arg.value_names {
+    //             debugln!("HelpWriter::val:{}: Has value names", arg.name);
+    //             let mut it = vec.iter().peekable();
+    //             while let Some((_, val)) = it.next() {
+    //                 try!(color!(self, w, "<{}>", val, good));
+    //                 if it.peek().is_some() {
+    //                     try!(write!(w, " "));
+    //                 }
+    //             }
+    //             let num = vec.len();
+    //             if arg.is_set(ArgSettings::Multiple) && num == 1 {
+    //                 try!(color!(self, w, "...", good));
+    //             }
+    //         } else if let Some(num) = arg.number_of_values {
+    //             debugln!("HelpWriter::val:{}: Has {} number of values", arg.name, num);
+    //             let mut it = (0..num).peekable();
+    //             while let Some(_) = it.next() {
+    //                 try!(color!(self, w, "<{}>", arg.name, good));
+    //                 if it.peek().is_some() {
+    //                     try!(write!(w, " "));
+    //                 }
+    //             }
+    //             if arg.is_set(ArgSettings::Multiple) && num == 1 {
+    //                 try!(color!(self, w, "...", good));
+    //             }
+    //         } else if arg._has_switch() {
+    //             debugln!("HelpWriter::val:{}: Has Switch", arg.name);
+    //             try!(color!(self, w, "<{}>", arg.name, good));
+    //             if arg.is_set(ArgSettings::Multiple) {
+    //                 try!(color!(self, w, "...", good));
+    //             }
+    //         } else {
+    //             debugln!("HelpWriter::val:{}: Writing normal value", arg.name);
+    //             try!(color!(self, w, "{}", arg.name, good));
+    //             if arg.is_set(ArgSettings::Multiple) {
+    //                 try!(color!(self, w, "...", good));
+    //             }
+    //         }
+    //     }
+
+    //     let spec_vals = self.spec_vals(arg);
+    //     Ok(spec_vals)
+    // }
+
+    fn write_before_after_help<W: Write>(&mut self, w: &mut W, h: &str) -> io::Result<()> {
+        debugln!(
+            "HelpWriter::write_before_after_help: Term width...{}",
+            self.term_width
+        );
+        let mut help = String::from(h);
+        // determine if our help fits or needs to wrap
+        let too_long = str_width(h) >= self.term_width;
+
+        if too_long || h.contains("{n}") {
+            debugln!("HelpWriter::write_before_after_help: width={}, Too long...", 
+                str_width(&*help)
+            );
+            // Determine how many newlines we need to insert
+            help = wrap_help(&help.replace("{n}", "\n"), self.term_width);
         }
+        try!(write!(w, "{}", help));
         Ok(())
     }
 
-    /// Writes argument's possible values to the wrapped stream.
-    fn val<W: Write>(&mut self, w: &mut W, arg: &Arg<'a, 'b>) -> Result<String, io::Error> {
-        debugln!("HelpWriter::val: arg={}", arg);
-        if arg.is_set(ArgSettings::TakesValue) {
-            if let Some(ref vec) = arg.value_names {
-                let mut it = vec.iter().peekable();
-                while let Some((_, val)) = it.next() {
-                    try!(color!(self, w, "<{}>", val, good));
-                    if it.peek().is_some() {
-                        try!(write!(w, " "));
-                    }
-                }
-                let num = vec.len();
-                if arg.is_set(ArgSettings::Multiple) && num == 1 {
-                    try!(color!(self, w, "...", good));
-                }
-            } else if let Some(num) = arg.number_of_values {
-                let mut it = (0..num).peekable();
-                while let Some(_) = it.next() {
-                    try!(color!(self, w, "<{}>", arg.name, good));
-                    if it.peek().is_some() {
-                        try!(write!(w, " "));
-                    }
-                }
-                if arg.is_set(ArgSettings::Multiple) && num == 1 {
-                    try!(color!(self, w, "...", good));
-                }
-            } else if arg._has_switch() {
-                try!(color!(self, w, "<{}>", arg.name, good));
-                if arg.is_set(ArgSettings::Multiple) {
-                    try!(color!(self, w, "...", good));
-                }
-            } else {
-                try!(color!(self, w, "{}", arg, good));
-            }
-        }
+    /// Writes argument's help to the wrapped stream.
+    fn help<W: Write>(&mut self, w: &mut W, arg: &Arg<'a, 'b>, spec_vals: &str, arg_len: usize) -> io::Result<()> {
+        debugln!("HelpWriter::help:{};", arg.name);
 
-        let spec_vals = self.spec_vals(arg);
-        let h = arg.help.unwrap_or("");
+        // Write sep
+        let h = if self.use_long {
+            arg.long_help.unwrap_or_else(|| arg.help.unwrap_or(""))
+        } else {
+            arg.help.unwrap_or_else(|| arg.long_help.unwrap_or(""))
+        };
         let h_w = str_width(h) + str_width(&*spec_vals);
         let nlh = self.next_line_help || arg.is_set(ArgSettings::NextLineHelp);
         let taken = self.longest + 12;
@@ -346,25 +392,13 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
             (taken as f32 / self.term_width as f32) > 0.40 &&
             h_w > (self.term_width - taken);
 
-        debug!("HelpWriter::val: Has switch...");
+        debugln!("HelpWriter::val:{}: Has switch...{:?}", arg.name, arg._has_switch());
+        debugln!("HelpWriter::val:{}: Next Line...{:?}", arg.name, self.force_next_line || nlh);
+        debugln!("HelpWriter::val:{}: taken={}, longest={}", arg.name, taken, self.longest);
         if arg._has_switch() {
-            sdebugln!("Yes");
-            debugln!("HelpWriter::val: force_next_line...{:?}", self.force_next_line);
-            debugln!("HelpWriter::val: nlh...{:?}", nlh);
-            debugln!("HelpWriter::val: taken...{}", taken);
-            debugln!(
-                "HelpWriter::val: help_width > (width - taken)...{} > ({} - {})",
-                h_w,
-                self.term_width,
-                taken
-            );
-            debugln!("HelpWriter::val: longest...{}", self.longest);
-            debug!("HelpWriter::val: next_line...");
             if !(nlh || self.force_next_line) {
-                sdebugln!("No");
-                let self_len = str_width(arg.to_string().as_str());
                 // subtract ourself
-                let mut spcs = self.longest - self_len;
+                let mut spcs = self.longest - arg_len;
                 // Since we're writing spaces from the tab point we first need to know if we
                 // had a long and short, or just short
                 if arg.long.is_some() {
@@ -376,63 +410,17 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
                 }
 
                 write_nspaces!(w, spcs);
-            } else {
-                sdebugln!("Yes");
             }
         } else if !(nlh || self.force_next_line) {
-            sdebugln!("No, and not next_line");
             write_nspaces!(
                 w,
                 self.longest + 4 - (str_width(arg.to_string().as_str()))
             );
-        } else {
-            sdebugln!("No");
         }
-        Ok(spec_vals)
-    }
 
-    fn write_before_after_help<W: Write>(&mut self, w: &mut W, h: &str) -> io::Result<()> {
-        debugln!("HelpWriter::write_before_after_help;");
-        let mut help = String::from(h);
-        // determine if our help fits or needs to wrap
-        debugln!(
-            "HelpWriter::write_before_after_help: Term width...{}",
-            self.term_width
-        );
-        let too_long = str_width(h) >= self.term_width;
-
-        debug!("HelpWriter::write_before_after_help: Too long...");
-        if too_long || h.contains("{n}") {
-            sdebugln!("Yes");
-            debugln!("HelpWriter::write_before_after_help: help: {}", help);
-            debugln!(
-                "HelpWriter::write_before_after_help: help width: {}",
-                str_width(&*help)
-            );
-            // Determine how many newlines we need to insert
-            debugln!(
-                "HelpWriter::write_before_after_help: Usable space: {}",
-                self.term_width
-            );
-            help = wrap_help(&help.replace("{n}", "\n"), self.term_width);
-        } else {
-            sdebugln!("No");
-        }
-        try!(write!(w, "{}", help));
-        Ok(())
-    }
-
-    /// Writes argument's help to the wrapped stream.
-    fn help<W: Write>(&mut self, w: &mut W, arg: &Arg<'a, 'b>, spec_vals: &str) -> io::Result<()> {
-        debugln!("HelpWriter::help;");
-        let h = if self.use_long {
-            arg.long_help.unwrap_or_else(|| arg.help.unwrap_or(""))
-        } else {
-            arg.help.unwrap_or_else(|| arg.long_help.unwrap_or(""))
-        };
         let mut help = String::from(h) + spec_vals;
         let nlh = self.next_line_help || arg.is_set(ArgSettings::NextLineHelp) || self.use_long;
-        debugln!("HelpWriter::help: Next Line...{:?}", nlh);
+        debugln!("HelpWriter::help:{}: Next Line...{:?}", arg.name, nlh);
 
         let spcs = if nlh || self.force_next_line {
             12 // "tab" * 3
@@ -440,24 +428,19 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
             self.longest + 12
         };
 
-        let too_long = spcs + str_width(h) + str_width(&*spec_vals) >= self.term_width;
+        let too_long = spcs + h_w >= self.term_width;
 
         // Is help on next line, if so then indent
         if nlh || self.force_next_line {
             try!(write!(w, "\n{}{}{}", TAB, TAB, TAB));
         }
 
-        debug!("HelpWriter::help: Too long...");
         if too_long && spcs <= self.term_width || h.contains("{n}") {
-            sdebugln!("Yes");
-            debugln!("HelpWriter::help: help...{}", help);
-            debugln!("HelpWriter::help: help width...{}", str_width(&*help));
+            debugln!("HelpWriter::help:{}: help width={}, too long", arg.name, str_width(&*help));
             // Determine how many newlines we need to insert
             let avail_chars = self.term_width - spcs;
-            debugln!("HelpWriter::help: Usable space...{}", avail_chars);
+            debugln!("HelpWriter::help:{}: Usable space...{}", arg.name, avail_chars);
             help = wrap_help(&help.replace("{n}", "\n"), avail_chars);
-        } else {
-            sdebugln!("No");
         }
         if let Some(part) = help.lines().next() {
             try!(write!(w, "{}", part));
@@ -481,7 +464,7 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
 
     /// Writes argument's help to the wrapped stream.
     fn subcommand_help<W: Write>(&mut self, w: &mut W, arg: &App<'a, 'b>, spec_vals: &str) -> io::Result<()> {
-        debugln!("HelpWriter::subcommand_help;");
+        debugln!("HelpWriter::subcommand_help:{}:;", arg.name);
         let h = if self.use_long {
             arg.long_about.unwrap_or_else(|| arg.about.unwrap_or(""))
         } else {
@@ -489,7 +472,7 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
         };
         let mut help = String::from(h) + spec_vals;
         let nlh = self.next_line_help || self.force_next_line || self.use_long;
-        debugln!("HelpWriter::subcommand_help: Next Line...{:?}", nlh);
+        debugln!("HelpWriter::subcommand_help:{}: Next Line...{:?}", arg.name, nlh);
 
         let spcs = if nlh || self.force_next_line {
             12 // "tab" * 3
@@ -504,17 +487,12 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
             try!(write!(w, "\n{}{}{}", TAB, TAB, TAB));
         }
 
-        debug!("HelpWriter::subcommand_help: Too long...");
         if too_long && spcs <= self.term_width || h.contains("{n}") {
-            sdebugln!("Yes");
-            debugln!("HelpWriter::subcommand_help: help...{}", help);
-            debugln!("HelpWriter::subcommand_help: help width...{}", str_width(&*help));
+            debugln!("HelpWriter::subcommand_help:{}: help_width={}, Too long...", arg.name, str_width(&*help));
             // Determine how many newlines we need to insert
             let avail_chars = self.term_width - spcs;
-            debugln!("HelpWriter::subcommand_help: Usable space...{}", avail_chars);
+            debugln!("HelpWriter::subcommand_help:{}: Usable space...{}", arg.name, avail_chars);
             help = wrap_help(&help.replace("{n}", "\n"), avail_chars);
-        } else {
-            sdebugln!("No");
         }
         if let Some(part) = help.lines().next() {
             try!(write!(w, "{}", part));
@@ -535,11 +513,11 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
     }
 
     fn spec_vals(&self, a: &Arg) -> String {
-        debugln!("HelpWriter::spec_vals: a={}", a);
+        debugln!("HelpWriter::spec_vals:{}", a.name);
         let mut spec_vals = vec![];
         if !a.is_set(ArgSettings::HideDefaultValue) {
             if let Some(pv) = a.default_value {
-                debugln!("HelpWriter::spec_vals: Found default value...[{:?}]", pv);
+                debugln!("HelpWriter::spec_vals:{}: Found default value...[{:?}]", a.name, pv);
                 spec_vals.push(format!(
                     " [default: {}]",
                     if self.color {
@@ -552,7 +530,7 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
         }
         // @TODO-v3-alpha: consider visible aliases
         if let Some(ref aliases) = a.aliases {
-            debugln!("HelpWriter::spec_vals: Found aliases...{:?}", aliases);
+            debugln!("HelpWriter::spec_vals:{}: Found aliases...{:?}", a.name, aliases);
             spec_vals.push(format!(
                 " [aliases: {}]",
                 if self.color {
@@ -568,7 +546,7 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
         }
         if !self.hide_pv && !a.is_set(ArgSettings::HidePossibleValues) {
             if let Some(ref pv) = a.possible_values {
-                debugln!("HelpWriter::spec_vals: Found possible vals...{:?}", pv);
+                debugln!("HelpWriter::spec_vals:{}: Found possible vals...{:?}", a.name, pv);
                 spec_vals.push(if self.color {
                     format!(
                         " [values: {}]",
@@ -586,11 +564,11 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
     }
 
     fn subcommand_spec_vals(&self, a: &App) -> String {
-        debugln!("HelpWriter::spec_vals: a={}", a);
+        debugln!("HelpWriter::spec_vals:{}", a.name);
         let mut spec_vals = vec![];
         // @TODO-v3-alpha: consider visible aliases
         if let Some(ref aliases) = a.aliases {
-            debugln!("HelpWriter::spec_vals: Found aliases...{:?}", aliases);
+            debugln!("HelpWriter::spec_vals:{}: Found aliases...{:?}", a.name, aliases);
             spec_vals.push(format!(
                 " [aliases: {}]",
                 if self.color {
@@ -629,6 +607,7 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
         let mut first = true;
 
         if unified_help && (flags || opts) {
+            debugln!("HelpWriter::write_all_args: writing unified help");
             let opts_flags = flags!(self.parser.app).chain(
                 opts!(self.parser.app)
             );
@@ -637,6 +616,7 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
             first = false;
         } else {
             if flags {
+                debugln!("HelpWriter::write_all_args: writing FLAGS");
                 try!(color!(self, w, "FLAGS:\n", warning));
                 try!(self.write_args(w, flags!(self.parser.app)));
                 first = false;
@@ -645,6 +625,7 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
                 if !first {
                     try!(w.write_all(b"\n\n"));
                 }
+                debugln!("HelpWriter::write_all_args: writing OPTIONS");
                 try!(color!(self, w, "OPTIONS:\n", warning));
                 try!(self.write_args(w, opts!(self.parser.app)));
                 first = false;
@@ -655,6 +636,7 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
             if !first {
                 try!(w.write_all(b"\n\n"));
             }
+            debugln!("HelpWriter::write_all_args: writing ARGS");
             try!(color!(self, w, "ARGS:\n", warning));
             try!(self.write_args_unsorted(
                 w,
@@ -667,6 +649,7 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
             if !first {
                 try!(w.write_all(b"\n\n"));
             }
+            debugln!("HelpWriter::write_all_args: writing SUBCOMMANDS");
             try!(color!(self, w, "SUBCOMMANDS:\n", warning));
             try!(self.write_subcommands(w));
         }

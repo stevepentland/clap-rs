@@ -17,9 +17,9 @@ FLAGS:
     -V, --version    Prints version information
 
 ARGS:
-    <arg1>    some
-    <arg2>    some
-    <arg3>    some";
+    [arg1]    some
+    [arg2]    some
+    [arg3]    some";
 
 static REQUIRE_EQUALS: &'static str = "clap-test v1.4.8
 
@@ -47,7 +47,7 @@ OPTIONS:
     -V, --version         Prints version information
 
 ARGS:
-    <arg1>    some pos arg";
+    [arg1]    some pos arg";
 
 static SKIP_POS_VALS: &'static str = "test 1.3
 Kevin K.
@@ -64,7 +64,7 @@ OPTIONS:
     -o, --opt <opt>    some option
 
 ARGS:
-    <arg1>    some pos arg";
+    [arg1]    some pos arg";
 
 #[test]
 fn sub_command_negate_required() {

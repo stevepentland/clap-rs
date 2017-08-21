@@ -41,3 +41,4 @@
 - [ ] Derive all common traits
 - [ ] Fix App's bin_name vs name vs usage delima
 - [ ] Get usage lazily
+- [ ] Cleanup Debug Output

@@ -28,3 +28,4 @@
 * Arg u64 -> Arg usize
 * SubCommand::with_name -> App::new
 * AppSettings::VersionlessSubcommands -> App::set_global(AppSettings::DisableVersion)
+* Args use the correct brackets in help messages to include when min required values are set

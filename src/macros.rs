@@ -986,7 +986,7 @@ macro_rules! arg_names {
 
 macro_rules! flags {
     ($app:expr) => {{
-        args!($app).filter(|a| !a._settings.is_set(ArgSettings::TakesValue))
+        args!($app).filter(|a| a._has_switch() && !a._settings.is_set(ArgSettings::TakesValue))
     }};
 }
 
