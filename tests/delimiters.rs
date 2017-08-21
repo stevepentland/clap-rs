@@ -1,6 +1,6 @@
 extern crate clap;
 
-use clap::{App, Arg};
+use clap::{App, Arg, ArgSettings};
 
 #[test]
 fn opt_default_no_delim() {
