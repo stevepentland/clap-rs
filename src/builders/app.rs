@@ -1580,12 +1580,14 @@ impl<'a, 'b> App<'a, 'b> {
             .long("help")
             .short("h")
             .help("Prints help information");
+        help._derived_order = 999; // 999 is arbitrarily high to ensure it's last
         self._add_arg(help);
         debugln!("App::_create_help_and_version: Building --version");
         let mut ver = Arg::new("version")
             .long("version")
             .help("Prints version information")
             .short("V");
+        ver._derived_order = 999; // 999 is arbitrarily high to ensure it's last
         self._add_arg(ver);
     }
 
