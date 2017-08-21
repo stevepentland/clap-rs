@@ -121,24 +121,24 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
 
         debugln!("HelpWriter::write_help;");
         if let Some(h) = self.parser.app.override_help {
-            try!(write!(w, "{}", h).map_err(ClapError::from));
+            write!(w, "{}", h).map_err(ClapError::from)?;
         } else if let Some(tmpl) = self.parser.app.help_template {
-            try!(self.write_templated_help(w, tmpl));
+            self.write_templated_help(w, tmpl)?;
         } else {
-            try!(self.write_default_help(w));
+            self.write_default_help(w)?;
         }
         Ok(())
     }
 
     /// Writes the version to the wrapped stream
     pub fn write_version<W: Write>(&mut self, w: &mut W) -> ClapResult<()> {
-        try!(self._write_version(w, false));
+        self._write_version(w, false)?;
         Ok(())
     }
 
     /// Writes the long version to the wrapped stream
     pub fn write_long_version<W: Write>(&mut self, w: &mut W) -> ClapResult<()> {
-        try!(self._write_version(w, true));
+        self._write_version(w, true)?;
         Ok(())
     }
 
@@ -199,9 +199,9 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
             if first {
                 first = false;
             } else {
-                try!(w.write_all(b"\n"));
+                w.write_all(b"\n")?;
             }
-            try!(self.write_arg(w, arg, &*arg_str, arg_len));
+            self.write_arg(w, arg, &*arg_str, arg_len)?;
         }
         Ok(())
     }
@@ -240,9 +240,9 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
                 if first {
                     first = false;
                 } else {
-                    try!(w.write_all(b"\n"));
+                    w.write_all(b"\n")?;
                 }
-                try!(self.write_arg(w, arg, &*arg_str, arg_len));
+                self.write_arg(w, arg, &*arg_str, arg_len)?;
             }
         }
         Ok(())
@@ -252,25 +252,25 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
     fn write_subcommand_as_arg<W: Write>(&mut self, w: &mut W, sc: &App<'a, 'b>) -> io::Result<()> {
         debugln!("HelpWriter::write_subcommand_as_arg;");
         let spec_vals = self.subcommand_spec_vals(sc);
-        try!(self.subcommand_help(w, sc, &*spec_vals));
+        self.subcommand_help(w, sc, &*spec_vals)?;
         Ok(())
     }
 
     /// Writes help for an argument to the wrapped stream.
     fn write_arg<W: Write>(&mut self, w: &mut W, arg: &Arg<'a, 'b>, arg_str: &str, arg_len: usize) -> io::Result<()> {
         debugln!("HelpWriter::write_arg:{};", arg.name);
-        try!(self.short(w, arg, arg_str));
-        try!(color!(self, w, "{}", arg_str, good));
+        self.short(w, arg, arg_str)?;
+        color!(self, w, "{}", arg_str, good)?;
         // try!(self.long(w, arg));
         let spec_vals = self.spec_vals(arg);
-        try!(self.help(w, arg, &*spec_vals, arg_len));
+        self.help(w, arg, &*spec_vals, arg_len)?;
         Ok(())
     }
 
     /// Writes argument's short command to the wrapped stream.
     fn short<W: Write>(&mut self, w: &mut W, arg: &Arg<'a, 'b>, arg_str: &str) -> io::Result<()> {
         debugln!("HelpWriter::short:{};", arg.name);
-        try!(write!(w, "{}", TAB));
+        write!(w, "{}", TAB)?;
         if let Some(s) = arg.short {
             if arg.long.is_some() {
                 color!(self, w, "-{}, ", s, good)
@@ -283,79 +283,6 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
             Ok(())
         }
     }
-
-    // /// Writes argument's long command to the wrapped stream.
-    // fn long<W: Write>(&mut self, w: &mut W, arg: &Arg<'a, 'b>) -> io::Result<()> {
-    //     debugln!("HelpWriter::long:{};", arg.name);
-    //     if !arg._has_switch() {
-    //         return Ok(());
-    //     }
-    //     if arg.is_set(ArgSettings::TakesValue) {
-    //         if let Some(l) = arg.long {
-    //             if arg.short.is_some() {
-    //                 try!(write!(w, ", "));
-    //             }
-    //             try!(color!(self, w, "--{}", l, good))
-    //         }
-
-    //         let sep = if arg.is_set(ArgSettings::RequireEquals) { "=" } else { " " };
-    //         try!(write!(w, "{}", sep));
-    //     } else if let Some(l) = arg.long {
-    //         if arg.short.is_some() {
-    //             try!(write!(w, ", "));
-    //         }
-    //         try!(color!(self, w, "--{}", l, good));
-    //     }
-    //     Ok(())
-    // }
-
-    // /// Writes argument's possible values to the wrapped stream.
-    // fn val<W: Write>(&mut self, w: &mut W, arg: &Arg<'a, 'b>) -> Result<String, io::Error> {
-    //     debugln!("HelpWriter::val:{}", arg.name);
-    //     if arg.is_set(ArgSettings::TakesValue) {
-    //         if let Some(ref vec) = arg.value_names {
-    //             debugln!("HelpWriter::val:{}: Has value names", arg.name);
-    //             let mut it = vec.iter().peekable();
-    //             while let Some((_, val)) = it.next() {
-    //                 try!(color!(self, w, "<{}>", val, good));
-    //                 if it.peek().is_some() {
-    //                     try!(write!(w, " "));
-    //                 }
-    //             }
-    //             let num = vec.len();
-    //             if arg.is_set(ArgSettings::Multiple) && num == 1 {
-    //                 try!(color!(self, w, "...", good));
-    //             }
-    //         } else if let Some(num) = arg.number_of_values {
-    //             debugln!("HelpWriter::val:{}: Has {} number of values", arg.name, num);
-    //             let mut it = (0..num).peekable();
-    //             while let Some(_) = it.next() {
-    //                 try!(color!(self, w, "<{}>", arg.name, good));
-    //                 if it.peek().is_some() {
-    //                     try!(write!(w, " "));
-    //                 }
-    //             }
-    //             if arg.is_set(ArgSettings::Multiple) && num == 1 {
-    //                 try!(color!(self, w, "...", good));
-    //             }
-    //         } else if arg._has_switch() {
-    //             debugln!("HelpWriter::val:{}: Has Switch", arg.name);
-    //             try!(color!(self, w, "<{}>", arg.name, good));
-    //             if arg.is_set(ArgSettings::Multiple) {
-    //                 try!(color!(self, w, "...", good));
-    //             }
-    //         } else {
-    //             debugln!("HelpWriter::val:{}: Writing normal value", arg.name);
-    //             try!(color!(self, w, "{}", arg.name, good));
-    //             if arg.is_set(ArgSettings::Multiple) {
-    //                 try!(color!(self, w, "...", good));
-    //             }
-    //         }
-    //     }
-
-    //     let spec_vals = self.spec_vals(arg);
-    //     Ok(spec_vals)
-    // }
 
     fn write_before_after_help<W: Write>(&mut self, w: &mut W, h: &str) -> io::Result<()> {
         debugln!(
@@ -373,7 +300,7 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
             // Determine how many newlines we need to insert
             help = wrap_help(&help.replace("{n}", "\n"), self.term_width);
         }
-        try!(write!(w, "{}", help));
+        write!(w, "{}", help)?;
         Ok(())
     }
 
@@ -431,7 +358,7 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
 
         // Is help on next line, if so then indent
         if nlh || self.force_next_line {
-            try!(write!(w, "\n{}{}{}", TAB, TAB, TAB));
+            write!(w, "\n{}{}{}", TAB, TAB, TAB)?;
         }
 
         if too_long && spcs <= self.term_width || h.contains("{n}") {
@@ -442,21 +369,21 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
             help = wrap_help(&help.replace("{n}", "\n"), avail_chars);
         }
         if let Some(part) = help.lines().next() {
-            try!(write!(w, "{}", part));
+            write!(w, "{}", part)?;
         }
         for part in help.lines().skip(1) {
-            try!(write!(w, "\n"));
+            write!(w, "\n")?;
             if nlh || self.force_next_line {
-                try!(write!(w, "{}{}{}", TAB, TAB, TAB));
+                write!(w, "{}{}{}", TAB, TAB, TAB)?;
             } else if arg._has_switch() {
                 write_nspaces!(w, self.longest + 12);
             } else {
                 write_nspaces!(w, self.longest + 8);
             }
-            try!(write!(w, "{}", part));
+            write!(w, "{}", part)?;
         }
         if !help.contains('\n') && (nlh || self.force_next_line) {
-            try!(write!(w, "\n"));
+            write!(w, "\n")?;
         }
         Ok(())
     }
@@ -483,7 +410,7 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
 
         // Is help on next line, if so then indent
         if nlh || self.force_next_line {
-            try!(write!(w, "\n{}{}{}", TAB, TAB, TAB));
+            write!(w, "\n{}{}{}", TAB, TAB, TAB)?;
         }
 
         if too_long && spcs <= self.term_width || h.contains("{n}") {
@@ -494,19 +421,19 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
             help = wrap_help(&help.replace("{n}", "\n"), avail_chars);
         }
         if let Some(part) = help.lines().next() {
-            try!(write!(w, "{}", part));
+            write!(w, "{}", part)?;
         }
         for part in help.lines().skip(1) {
-            try!(write!(w, "\n"));
+            write!(w, "\n")?;
             if nlh || self.force_next_line {
-                try!(write!(w, "{}{}{}", TAB, TAB, TAB));
+                write!(w, "{}{}{}", TAB, TAB, TAB)?;
             } else {
                 write_nspaces!(w, self.longest + 8);
             }
-            try!(write!(w, "{}", part));
+            write!(w, "{}", part)?;
         }
         if !help.contains('\n') && (nlh || self.force_next_line) {
-            try!(write!(w, "\n"));
+            write!(w, "\n")?;
         }
         Ok(())
     }
@@ -606,40 +533,40 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
 
         if unified_help && (flags || opts) {
             debugln!("HelpWriter::write_all_args: writing unified help");
-            try!(color!(self, w, "OPTIONS:\n", warning));
+            color!(self, w, "OPTIONS:\n", warning)?;
             let opts_flags = flags!(self.parser.app).chain(
                 opts!(self.parser.app)
             );
-            try!(self.write_args(w, opts_flags));
+            self.write_args(w, opts_flags)?;
             first = false;
         } else {
             if flags {
                 debugln!("HelpWriter::write_all_args: writing FLAGS");
-                try!(color!(self, w, "FLAGS:\n", warning));
-                try!(self.write_args(w, flags!(self.parser.app)));
+                color!(self, w, "FLAGS:\n", warning)?;
+                self.write_args(w, flags!(self.parser.app))?;
                 first = false;
             }
             if opts {
                 if !first {
-                    try!(w.write_all(b"\n\n"));
+                    w.write_all(b"\n\n")?;
                 }
                 debugln!("HelpWriter::write_all_args: writing OPTIONS");
-                try!(color!(self, w, "OPTIONS:\n", warning));
-                try!(self.write_args(w, opts!(self.parser.app)));
+                color!(self, w, "OPTIONS:\n", warning)?;
+                self.write_args(w, opts!(self.parser.app))?;
                 first = false;
             }
         }
 
         if pos {
             if !first {
-                try!(w.write_all(b"\n\n"));
+                w.write_all(b"\n\n")?;
             }
             debugln!("HelpWriter::write_all_args: writing ARGS");
-            try!(color!(self, w, "ARGS:\n", warning));
-            try!(self.write_args_unsorted(
+            color!(self, w, "ARGS:\n", warning)?;
+            self.write_args_unsorted(
                 w,
                 positionals!(self.parser.app)
-            ));
+            )?;
             first = false;
         }
 
@@ -676,9 +603,9 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
                 if first {
                     first = false;
                 } else {
-                    try!(w.write_all(b"\n"));
+                    w.write_all(b"\n")?;
                 }
-                try!(self.write_subcommand_as_arg(w, sc));
+                self.write_subcommand_as_arg(w, sc)?;
             }
         }
         Ok(())
@@ -687,7 +614,7 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
     /// Writes version of a Parser Object to the wrapped stream.
     fn write_only_version<W: Write>(&mut self, w: &mut W) -> io::Result<()> {
         debugln!("HelpWriter::write_only_version;");
-        try!(write!(w, "{}", self.parser.app.version.unwrap_or("")));
+        write!(w, "{}", self.parser.app.version.unwrap_or(""))?;
         Ok(())
     }
 
@@ -698,13 +625,13 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
             () => {{
                 let mut name = self.parser.app.name.clone();
                 name = name.replace("{n}", "\n");
-                try!(color!(self, w, wrap_help(&name, self.term_width), good));
+                color!(self, w, wrap_help(&name, self.term_width), good)?;
             }};
         }
         if let Some(bn) = self.parser.app.bin_name.as_ref() {
             if bn.contains(' ') {
                 // Incase we're dealing with subcommands i.e. git mv is translated to git-mv
-                try!(color!(self, w, bn.replace(" ", "-"), good))
+                color!(self, w, bn.replace(" ", "-"), good)?
             } else {
                 write_name!();
             }
@@ -718,23 +645,23 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
     pub fn write_default_help<W: Write>(&mut self, w: &mut W) -> ClapResult<()> {
         debugln!("HelpWriter::write_default_help;");
         if let Some(h) = self.parser.app.before_help {
-            try!(self.write_before_after_help(w, h));
-            try!(w.write_all(b"\n\n"));
+            self.write_before_after_help(w, h)?;
+            w.write_all(b"\n\n")?;
         }
 
         macro_rules! write_thing {
             ($thing:expr) => {{
                 let mut owned_thing = $thing.to_owned();
                 owned_thing = owned_thing.replace("{n}", "\n");
-                try!(write!(w, "{}\n",
-                            wrap_help(&owned_thing, self.term_width)))
+                write!(w, "{}\n",
+                            wrap_help(&owned_thing, self.term_width))?
             }};
         }
         // Print the version
-        try!(self.write_bin_name(w));
-        try!(w.write_all(b" "));
-        try!(self.write_only_version(w));
-        try!(w.write_all(b"\n"));
+        self.write_bin_name(w)?;
+        w.write_all(b" ")?;
+        self.write_only_version(w)?;
+        w.write_all(b"\n")?;
         if let Some(author) = self.parser.app.author {
             write_thing!(author)
         }
@@ -742,13 +669,13 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
             write_thing!(about)
         }
 
-        try!(color!(self, w, "\nUSAGE:", warning));
-        try!(write!(
+        color!(self, w, "\nUSAGE:", warning)?;
+        write!(
             w,
             "\n{}{}\n\n",
             TAB,
             self.parser.create_usage_no_title(&[])
-        ));
+        )?;
 
         let flags = self.parser.has_flags();
         let pos = self.parser.has_positionals();
@@ -756,14 +683,14 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
         let subcmds = self.parser.has_subcommands();
 
         if flags || opts || pos || subcmds {
-            try!(self.write_all_args(w));
+            self.write_all_args(w)?;
         }
 
         if let Some(h) = self.parser.app.after_help {
             if flags || opts || pos || subcmds {
-                try!(w.write_all(b"\n\n"));
+                w.write_all(b"\n\n")?;
             }
-            try!(self.write_before_after_help(w, h));
+            self.write_before_after_help(w, h)?;
         }
 
         w.flush().map_err(ClapError::from)
@@ -927,79 +854,79 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
             });
             match &tag_buf.get_ref()[0..tag_length] {
                 b"?" => {
-                    try!(w.write_all(b"Could not decode tag name"));
+                    w.write_all(b"Could not decode tag name")?;
                 }
                 b"bin" => {
-                    try!(self.write_bin_name(w));
+                    self.write_bin_name(w)?;
                 }
                 b"version" => {
-                    try!(write!(
+                    write!(
                         w,
                         "{}",
                         self.parser.app.version.unwrap_or("unknown version")
-                    ));
+                    )?;
                 }
                 b"author" => {
-                    try!(write!(
+                    write!(
                         w,
                         "{}",
                         self.parser.app.author.unwrap_or("unknown author")
-                    ));
+                    )?;
                 }
                 b"about" => {
-                    try!(write!(
+                    write!(
                         w,
                         "{}",
                         self.parser.app.about.unwrap_or("unknown about")
-                    ));
+                    )?;
                 }
                 b"usage" => {
-                    try!(write!(
+                    write!(
                         w,
                         "{}",
                         self.parser.create_usage_no_title(&[])
-                    ));
+                    )?;
                 }
                 b"all-args" => {
-                    try!(self.write_all_args(w));
+                    self.write_all_args(w)?;
                 }
                 b"unified" => {
                     let opts_flags = flags!(self.parser.app).chain(
                         opts!(self.parser.app)
                     );
-                    try!(self.write_args(w, opts_flags));
+                    self.write_args(w, opts_flags)?;
                 }
                 b"flags" => {
-                    try!(self.write_args(w, flags!(self.parser.app)));
+                    self.write_args(w, flags!(self.parser.app))?;
                 }
                 b"options" => {
-                    try!(self.write_args(w, opts!(self.parser.app)));
+                    self.write_args(w, opts!(self.parser.app))?;
                 }
                 b"positionals" => {
-                    try!(self.write_args(w, positionals!(self.parser.app)));
+                    self.write_args(w, positionals!(self.parser.app))?;
                 }
                 b"subcommands" => {
-                    try!(self.write_subcommands(w));
+                    self.write_subcommands(w)?;
                 }
                 b"after-help" => {
-                    try!(write!(
+                    write!(
                         w,
                         "{}",
                         self.parser.app.after_help.unwrap_or("unknown after-help")
-                    ));
+                    )?;
                 }
                 b"before-help" => {
-                    try!(write!(
+                    write!(
                         w,
                         "{}",
                         self.parser.app.before_help.unwrap_or("unknown before-help")
-                    ));
+                    )?;
                 }
                 // Unknown tag, write it back.
                 r => {
-                    try!(w.write_all(b"{"));
-                    try!(w.write_all(r));
-                    try!(w.write_all(b"}"));
+                    w.write_all(b"{")?;
+                    w.write_all(r)?;
+                    w.write_all(b"}")?;
                 }
             }
         }
