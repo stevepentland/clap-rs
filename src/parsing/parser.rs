@@ -114,13 +114,13 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
                 p.app._settings.set(AS::DontCollapseArgsInUsage);
                 p.app._settings.set(AS::ContainsLast);
             }
-            if let Some(l) = a.long {
-                if l == "version" {
-                    p.app._settings.unset(AS::NeedsLongVersion);
-                } else if l == "help" {
-                    p.app._settings.unset(AS::NeedsLongHelp);
-                }
-            }
+            // if let Some(l) = a.long {
+            //     if l == "version" {
+            //         p.app._settings.unset(AS::NeedsLongVersion);
+            //     } else if l == "help" {
+            //         p.app._settings.unset(AS::NeedsLongHelp);
+            //     }
+            // }
             if !a._has_switch() {
                 let i = if a.index.is_none() {
                     (p.positionals.len() + 1)
@@ -391,44 +391,33 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
     // @TODO-v3-alpha: This should only propagate to a particular SC, not all
     pub fn propagate_settings_to(&mut self, sc_name: &str) {
         debugln!(
-            "Parser::propogate_settings: self={}, g_settings={:#?}",
-            self.app.name,
-            self.app._g_settings
+            "Parser::propogate_settings_to:{}: self={}",
+            sc_name,
+            self.app.name
         );
         if let Some(sc) = self.app
             .subcommands
             .iter_mut()
             .find(|sc| sc.name == sc_name)
         {
-            debugln!(
-                "Parser::propogate_settings: sc={}, settings={:#?}, g_settings={:#?}",
-                sc.name,
-                sc._settings,
-                sc._g_settings
-            );
-            // We have to create a new scope in order to tell rustc the borrow of `sc` is
-            // done and to recursively call this method
-            {
-                let vsc = self.app._settings.is_set(AS::VersionlessSubcommands);
-                let gv = self.app._settings.is_set(AS::GlobalVersion);
+            let gv = self.app._settings.is_set(AS::GlobalVersion) || self.app._g_settings.is_set(AS::GlobalVersion);
 
-                if vsc {
-                    sc.setb(AS::DisableVersion);
-                }
-                if gv && sc.version.is_none() && self.app.version.is_some() {
-                    sc.setb(AS::GlobalVersion);
-                    sc.version = Some(self.app.version.unwrap());
-                }
-                for set in &self.app.settings {
-                    sc.settings.push(*set);
-                }
-                for set in &self.app.global_settings {
-                    sc.settings.push(*set);
-                    sc.global_settings.push(*set);
-                }
-                sc.term_width = self.app.term_width;
-                sc.max_term_width = self.app.max_term_width;
+            if gv && self.app.version.is_some() {
+                debugln!( "Parser::propogate_settings_to:{}: GlobalVersion set", sc_name);
+                debugln!( "Parser::propogate_settings_to:{}: setting version...{:?}", sc_name, self.app.version);
+                debugln!( "Parser::propogate_settings_to:{}: setting long_version...{:?}", sc_name, self.app.long_version);
+                sc.global_settings.push(AS::GlobalVersion);
+                sc.version = self.app.version;
+                sc.long_version = self.app.long_version;
             }
+            for set in &self.app.settings {
+                sc.settings.push(*set);
+            }
+            for set in &self.app.global_settings {
+                sc.global_settings.push(*set);
+            }
+            sc.term_width = self.app.term_width;
+            sc.max_term_width = self.app.max_term_width;
         }
     }
 
@@ -499,7 +488,8 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
                     );
                     if is_match {
                         let sc_name = sc_name.expect(INTERNAL_ERROR_MSG);
-                        if sc_name == "help" && self.is_set(AS::NeedsSubcommandHelp) {
+                        // @VERIFY @TODO-v3-alpha: DisableHelp?
+                        if sc_name == "help" { //&& self.is_set(AS::NeedsSubcommandHelp) {
                             try!(self.parse_help_subcommand(it));
                         }
                         subcmd_name = Some(sc_name.to_owned());
@@ -1273,11 +1263,11 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
             "Parser::check_for_help_and_version_str: Checking if --{} is help or version...",
             arg.to_str().unwrap()
         );
-        if arg == "help" && self.is_set(AS::NeedsLongHelp) {
+        if arg == "help" { //&& self.is_set(AS::NeedsLongHelp) {
             sdebugln!("Help");
             return Err(self._help(true));
         }
-        if arg == "version" && self.is_set(AS::NeedsLongVersion) {
+        if arg == "version" { //&& self.is_set(AS::NeedsLongVersion) {
             sdebugln!("Version");
             return Err(self._version(true));
         }
@@ -1293,13 +1283,13 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
             arg
         );
         if let Some(h) = self.app.help_short {
-            if arg == h && self.is_set(AS::NeedsLongHelp) {
+            if arg == h { //&& self.is_set(AS::NeedsLongHelp) {
                 sdebugln!("Help");
                 return Err(self._help(false));
             }
         }
         if let Some(v) = self.app.version_short {
-            if arg == v && self.is_set(AS::NeedsLongVersion) {
+            if arg == v { //&& self.is_set(AS::NeedsLongVersion) {
                 sdebugln!("Version");
                 return Err(self._version(false));
             }
@@ -1424,24 +1414,27 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
 
     fn _version(&self, use_long: bool) -> ClapError {
         debugln!("Parser::_version: ");
-        let out = io::stdout();
-        let mut buf_w = BufWriter::new(out.lock());
-        match self.print_version(&mut buf_w, use_long) {
-            Err(e) => e,
+        let mut buf_w = vec![];
+        match self.write_version(&mut buf_w, use_long) {
+            Err(e) => ClapError::from(e),
             _ => ClapError {
-                message: String::new(),
+                message: unsafe { String::from_utf8_unchecked(buf_w) },
                 kind: ErrorKind::VersionDisplayed,
                 info: None,
             },
         }
     }
 
-    fn print_version<W: Write>(&self, w: &mut W, use_long: bool) -> ClapResult<()> {
-        try!(self.write_version(w, use_long));
-        w.flush().map_err(ClapError::from)
-    }
+    // fn print_version<W: Write>(&self, w: &mut W, use_long: bool) -> ClapResult<()> {
+    //     debugln!("Parser::print_version: ");
+    //     let out = io::stdout();
+    //     let mut stdout_buf_w = BufWriter::new(out.lock());
+    //     try!(self.write_version(w, use_long));
+    //     w.flush().map_err(ClapError::from)
+    // }
 
     pub fn write_version<W: Write>(&self, w: &mut W, use_long: bool) -> io::Result<()> {
+        debugln!("Parser::write_version: ");
         let ver = if use_long {
             self.app
                 .long_version
@@ -1451,7 +1444,7 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
                 .version
                 .unwrap_or_else(|| self.app.long_version.unwrap_or(""))
         };
-        if let Some(bn) = self.app.bin_name.as_ref() {
+        if let Some(ref bn) = self.app.bin_name {
             if bn.contains(' ') {
                 // Incase we're dealing with subcommands i.e. git mv is translated to git-mv
                 write!(w, "{} {}", bn.replace(" ", "-"), ver)
@@ -1473,7 +1466,7 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
     //
 
     #[inline]
-    pub fn is_set(&self, s: AS) -> bool { self.app._settings.is_set(s) }
+    pub fn is_set(&self, s: AS) -> bool { self.app._settings.is_set(s) || self.app._g_settings.is_set(s) }
 
     #[inline]
     pub fn set(&mut self, s: AS) { self.app._settings.set(s) }

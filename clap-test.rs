@@ -29,7 +29,7 @@ mod test {
         b
     }
 
-    pub fn compare_output(l: App, args: &str, right: &str, stderr: bool) -> bool {
+    pub fn compare_output(l: App, args: &str, right: &str, stderr: bool) {
         let mut buf = Cursor::new(Vec::with_capacity(50));
         let res = l.get_matches_from_safe(args.split(' ').collect::<Vec<_>>());
         let err = res.unwrap_err();
@@ -37,7 +37,7 @@ mod test {
         let content = buf.into_inner();
         let left = String::from_utf8(content).unwrap();
         assert_eq!(stderr, err.use_stderr(), "{:?}", err);
-        compare(left, right)
+        assert!(compare(left, right));
     }
 
     // Legacy tests from the pyhton script days

@@ -153,7 +153,10 @@ impl<'a, 'b> App<'a, 'b> {
     /// let prog = App::new("My Program")
     /// # ;
     /// ```
-    pub fn new<S: Into<String>>(n: S) -> Self { App { name: n.into(), ..Default::default() }
+    pub fn new<S: Into<String>>(n: S) -> Self { 
+        let mut app = App { name: n.into(), ..Default::default() };
+        app._create_help_and_version();
+        app
     }
 
     /// Sets the program's name. This will be displayed when displaying help information.
@@ -552,7 +555,7 @@ impl<'a, 'b> App<'a, 'b> {
     /// [`AppSettings`]: ./enum.AppSettings.html
     pub fn set_global(mut self, setting: AppSettings) -> Self {
         self.global_settings.push(setting);
-        self.setting(setting)
+        self
     }
 
     /// Enables multiple settings which are propogated *down* through all child [`SubCommand`]s.
@@ -1506,12 +1509,12 @@ impl<'a, 'b> App<'a, 'b> {
     // Make App ready for parsing. This should be called after all args are built but before parsing
     #[doc(hidden)]
     pub fn _build(&mut self) {
-        // @TODO-v3-alpha: Remove Help/Version if applicable
+        debugln!("App::_build:{}:", self.name);
+        // @VERIFY @TODO-v3-alpha: Remove Help/Version if applicable
         for s in &self.settings {
             self._settings.set(*s);
         }
         for s in &self.global_settings {
-            self._settings.set(*s);
             self._g_settings.set(*s);
         }
         if self._settings.is_set(AppSettings::GlobalVersion) {
@@ -1632,7 +1635,7 @@ impl<'a, 'b> App<'a, 'b> {
     #[deprecated(since = "2.26.0", note = "Use App::set_global instead")]
     pub fn global_setting(mut self, setting: AppSettings) -> Self {
         self.global_settings.push(setting);
-        self.setting(setting)
+        self
     }
 
     /// Deprecated

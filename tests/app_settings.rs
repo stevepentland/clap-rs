@@ -5,7 +5,7 @@ use clap::{App, Arg, SubCommand, AppSettings, ErrorKind, ArgSettings};
 
 include!("../clap-test.rs");
 
-static GLOBAL_VERSION: &'static str = "clap-test-sub1 v1.1";
+static GLOBAL_VERSION: &'static str = "gver-sub1 v1.1";
 
 static DONT_COLLAPSE_ARGS: &'static str = "clap-test v1.4.8
 
@@ -79,11 +79,11 @@ fn sub_command_negate_required() {
 
 #[test]
 fn global_version() {
-    let app = App::new("global_version")
+    let app = App::new("gver")
         .set(AppSettings::GlobalVersion)
-        .version("1.1")
+        .version("v1.1")
         .subcommand(App::new("sub1"));
-    assert!(test::compare_output(app, "test sub1 --version", GLOBAL_VERSION, false));
+    test::compare_output(app, "gver sub1 --version", GLOBAL_VERSION, false);
 }
 
 #[test]
@@ -245,7 +245,7 @@ fn unified_help() {
                           [arg1] 'some pos arg'
                           --option [opt] 'some option'");
 
-    assert!(test::compare_output(app, "test --help", UNIFIED_HELP, false));
+    test::compare_output(app, "test --help", UNIFIED_HELP, false);
 }
 
 #[test]
@@ -260,7 +260,7 @@ fn skip_possible_values() {
                                                                                        "two"]),
                     Arg::from("[arg1] 'some pos arg'").possible_values(&["three", "four"])]);
 
-    assert!(test::compare_output(app, "test --help", SKIP_POS_VALS, false));
+    test::compare_output(app, "test --help", SKIP_POS_VALS, false);
 }
 
 
@@ -445,7 +445,7 @@ fn dont_collapse_args() {
         .args(&[Arg::new("arg1").help("some"),
                 Arg::new("arg2").help("some"),
                 Arg::new("arg3").help("some")]);
-    assert!(test::compare_output(app, "clap-test --help", DONT_COLLAPSE_ARGS, false));
+    test::compare_output(app, "clap-test --help", DONT_COLLAPSE_ARGS, false);
 }
 
 #[test]
@@ -459,7 +459,7 @@ fn require_eq() {
                  .require_equals(true)
                  .value_name("FILE")
                  .help("some"));
-    assert!(test::compare_output(app, "clap-test --help", REQUIRE_EQUALS, false));
+    test::compare_output(app, "clap-test --help", REQUIRE_EQUALS, false);
 }
 
 #[test]
