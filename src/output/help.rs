@@ -215,6 +215,7 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
         debugln!("HelpWriter::write_args;");
         // The shortest an arg can legally be is 2 (i.e. '-x')
         self.longest = 2;
+        let ddo = self.parser.is_set(AppSettings::DeriveDisplayOrder);
         let mut ord_m = VecMap::new();
         // Determine the longest
         for arg in args.filter(|arg| {
@@ -229,7 +230,8 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
             if !arg._settings.is_set(ArgSettings::NextLineHelp) {
                 self.longest = cmp::max(self.longest, arg_len);
             }
-            let btm = ord_m.entry(arg.disp_ord()).or_insert(BTreeMap::new());
+            let order = if ddo { arg._derived_order } else { arg.display_order };
+            let btm = ord_m.entry(order).or_insert(BTreeMap::new());
             btm.insert(arg.name, (arg, arg_str, arg_len));
         }
         let mut first = true;
@@ -608,10 +610,10 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
 
         if unified_help && (flags || opts) {
             debugln!("HelpWriter::write_all_args: writing unified help");
+            try!(color!(self, w, "OPTIONS:\n", warning));
             let opts_flags = flags!(self.parser.app).chain(
                 opts!(self.parser.app)
             );
-            try!(color!(self, w, "OPTIONS:\n", warning));
             try!(self.write_args(w, opts_flags));
             first = false;
         } else {

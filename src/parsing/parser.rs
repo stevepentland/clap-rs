@@ -362,32 +362,32 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
     // -------- Derive and Propagate
     //
 
-    #[cfg_attr(feature = "lints", allow(needless_borrow))]
-    pub fn derive_display_order(&mut self) {
-        if self.is_set(AS::DeriveDisplayOrder) {
-            let unified = self.is_set(AS::UnifiedHelpMessage);
-            for (i, a) in parser_args_mut!(self)
-                .enumerate()
-                .filter(|&(_, ref a)| a.display_order == 999)
-            {
-                a.display_order = if unified { a._unified_order } else { i };
-            }
-            for (i, sc) in &mut self.app.subcommands.iter_mut().enumerate().filter(
-                |&(_, ref sc)| {
-                    sc.display_order == 999
-                },
-            )
-            {
-                sc.display_order = i;
-            }
-        }
-        // @TODO-v3-alpha: display order for children shouldn't be derived unless we need to display
-        // it!
-        //
-        // for sc in &mut self.app.subcommands {
-        //     sc.derive_display_order();
-        // }
-    }
+    // #[cfg_attr(feature = "lints", allow(needless_borrow))]
+    // pub fn derive_display_order(&mut self) {
+    //     if self.is_set(AS::DeriveDisplayOrder) {
+    //         let unified = self.is_set(AS::UnifiedHelpMessage);
+    //         for (i, a) in parser_args_mut!(self)
+    //             .enumerate()
+    //             .filter(|&(_, ref a)| a.display_order == 999)
+    //         {
+    //             a.display_order = if unified { a._derived_order } else { i };
+    //         }
+    //         for (i, sc) in &mut self.app.subcommands.iter_mut().enumerate().filter(
+    //             |&(_, ref sc)| {
+    //                 sc.display_order == 999
+    //             },
+    //         )
+    //         {
+    //             sc.display_order = i;
+    //         }
+    //     }
+    //     // @TODO-v3-alpha: display order for children shouldn't be derived unless we need to display
+    //     // it!
+    //     //
+    //     // for sc in &mut self.app.subcommands {
+    //     //     sc.derive_display_order();
+    //     // }
+    // }
 
     // @TODO-v3-alpha: This should only propagate to a particular SC, not all
     pub fn propagate_settings_to(&mut self, sc_name: &str) {
@@ -443,7 +443,8 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
         // globals should only be propagated on completions...consider moving this call
         // self.propagate_globals();
 
-        self.derive_display_order();
+        // @TODO-v3-alpha: should display order only be derived if we're going to dispaly it?
+        // self.derive_display_order();
 
         // Verify all positional assertions pass
         debug_assert!(self.app_debug_asserts());

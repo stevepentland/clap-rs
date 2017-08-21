@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::cmp::{Ord, Ordering};
 use std::fmt::{self, Formatter, Display, Error};
 use std::result::Result as StdResult;
 use std::rc::Rc;
@@ -121,7 +122,7 @@ where
     pub _settings: ArgFlags,
     #[cfg_attr(feature = "serde", serde(skip))]
     #[doc(hidden)]
-    pub _unified_order: usize
+    pub _derived_order: usize
 }
 
 impl<'a, 'b> Arg<'a, 'b> {
@@ -2915,13 +2916,25 @@ impl<'n, 'e> Display for Arg<'n, 'e> {
     }
 }
 
-impl<'n, 'e> DispOrder for Arg<'n, 'e> {
-    fn disp_ord(&self) -> usize { self.display_order }
+impl<'n, 'e> PartialOrd for Arg<'n , 'e> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<'n, 'e> Ord for Arg<'n, 'e> {
+    fn cmp(&self, other: &Arg) -> Ordering {
+        self.name.cmp(&other.name)
+    }
 }
 
 impl<'n, 'e> PartialEq for Arg<'n, 'e> {
-    fn eq(&self, other: &Arg<'n, 'e>) -> bool { self.name == other.name }
+    fn eq(&self, other: &Arg) -> bool {
+        self.name == other.name
+    }
 }
+
+impl<'n, 'e> Eq for Arg<'n, 'e> { }
 
 impl<'n, 'e> fmt::Debug for Arg<'n, 'e> {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {

@@ -732,9 +732,9 @@ impl<'a, 'b> App<'a, 'b> {
     /// ```
     /// [argument]: ./struct.Arg.html
     pub fn arg<A: Into<Arg<'a, 'b>>>(mut self, a: A) -> Self {
-        // @DOCS @TODO-v3-release: _unified_order doesn't get set if using serde
+        // @DOCS @TODO-v3-release: _derived_order doesn't get set if using serde
         let mut arg = a.into();
-        arg._unified_order = self.args.len() + self.global_args.len();
+        arg._derived_order = self.args.len() + self.global_args.len();
         self.args.push(arg);
         self
     }
@@ -754,9 +754,10 @@ impl<'a, 'b> App<'a, 'b> {
     /// ```
     /// [arguments]: ./struct.Arg.html
     pub fn args(mut self, args: &[Arg<'a, 'b>]) -> Self {
+        // @DOCS @TODO-v3-release: _derived_order doesn't get set if using serde
         for a in args {
             let mut arg = a.to_owned();
-            arg._unified_order = self.args.len() + self.global_args.len();
+            arg._derived_order = self.args.len() + self.global_args.len();
             self.args.push(arg);
         }
         self
