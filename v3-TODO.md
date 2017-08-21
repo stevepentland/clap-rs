@@ -6,7 +6,7 @@
   - [x] Arg
   - [ ] Make tests pass
     - [x] app_settings
-    - [ ] arg_aliases
+    - [x] arg_aliases
     - [x] borrowed
     - [ ] completions
     - [x] conflicts

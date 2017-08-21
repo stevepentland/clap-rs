@@ -3,7 +3,7 @@ extern crate regex;
 
 include!("../clap-test.rs");
 
-use clap::{App, Arg, SubCommand};
+use clap::{App, Arg, ArgSettings};
 
 static SC_VISIBLE_ALIAS_HELP: &'static str = "ct-test 1.2
 Some help
@@ -160,7 +160,7 @@ fn invisible_arg_aliases_help_output() {
                         .arg(Arg::from("-f, --flag").aliases(&["invisible",
                                                                      "flg1",
                                                                      "anyway"])));
-    assert!(test::compare_output(app, "ct test --help", SC_INVISIBLE_ALIAS_HELP, false));
+    test::compare_output(app, "ct test --help", SC_INVISIBLE_ALIAS_HELP, false);
 }
 
 #[test]
@@ -180,5 +180,5 @@ fn visible_arg_aliases_help_output() {
                                  .long("flag")
                                  .short("f")
                                  .visible_aliases(&["v_flg", "flag2", "flg3"])));
-    assert!(test::compare_output(app, "ct test --help", SC_VISIBLE_ALIAS_HELP, false));
+    test::compare_output(app, "ct test --help", SC_VISIBLE_ALIAS_HELP, false);
 }

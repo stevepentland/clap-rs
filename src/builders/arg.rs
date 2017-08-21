@@ -2462,16 +2462,14 @@ impl<'a, 'b> Arg<'a, 'b> {
                 ""
             };
             let (open, close) = if min_vals == 0 || (positional && !req) { ("[", "]") } else { ("<", ">") };
-            if positional {
-                try!(write!(
-                    f,
-                    "{}{}{}{}",
-                    open,
-                    self.name,
-                    close,
-                    mult
-                ));
-            }
+            try!(write!(
+                f,
+                "{}{}{}{}",
+                open,
+                self.name,
+                close,
+                mult
+            ));
         }
 
         Ok(())

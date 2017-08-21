@@ -394,9 +394,6 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
             (taken as f32 / self.term_width as f32) > 0.40 &&
             h_w > (self.term_width - taken);
 
-        debugln!("HelpWriter::val:{}: Has switch...{:?}", arg.name, arg._has_switch());
-        debugln!("HelpWriter::val:{}: Next Line...{:?}", arg.name, self.force_next_line || nlh);
-        debugln!("HelpWriter::val:{}: taken={}, longest={}", arg.name, taken, self.longest);
         if arg._has_switch() {
             if !(nlh || self.force_next_line) {
                 // subtract ourself
@@ -530,8 +527,7 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
                 ));
             }
         }
-        // @TODO-v3-alpha: consider visible aliases
-        if let Some(ref aliases) = a.aliases {
+        if let Some(ref aliases) = a.visible_aliases {
             debugln!("HelpWriter::spec_vals:{}: Found aliases...{:?}", a.name, aliases);
             spec_vals.push(format!(
                 " [aliases: {}]",
@@ -569,7 +565,7 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
         debugln!("HelpWriter::spec_vals:{}", a.name);
         let mut spec_vals = vec![];
         // @TODO-v3-alpha: consider visible aliases
-        if let Some(ref aliases) = a.aliases {
+        if let Some(ref aliases) = a.visible_aliases {
             debugln!("HelpWriter::spec_vals:{}: Found aliases...{:?}", a.name, aliases);
             spec_vals.push(format!(
                 " [aliases: {}]",
