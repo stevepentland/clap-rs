@@ -5,17 +5,17 @@ include!("../clap-test.rs");
 
 use clap::{App, Arg, ErrorKind, ArgGroup};
 
-static CONFLICT_ERR: &'static str = "error: The argument '-F' cannot be used with '--flag'
+static CONFLICT_ERR: &'static str = "error: The argument '--flag' cannot be used with '-F'
 
 USAGE:
-    clap-test <positional> <positional2> --flag --long-option-2 <option2>
+    clap-test [positional] [positional2] -F --long-option-2 <option2>
 
 For more information try --help";
 
 static CONFLICT_ERR_REV: &'static str = "error: The argument '--flag' cannot be used with '-F'
 
 USAGE:
-    clap-test <positional> <positional2> -F --long-option-2 <option2>
+    clap-test [positional] [positional2] -F --long-option-2 <option2>
 
 For more information try --help";
 

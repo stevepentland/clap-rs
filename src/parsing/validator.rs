@@ -153,24 +153,21 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c> {
         }
 
         for name in &self.conflicts {
-            debugln!(
-                "Validator::validate_conflicts:iter: Checking conflictsed name: {}",
-                name
-            );
+            debugln!( "Validator::validate_conflicts:iter:{};", name );
             if self.app.groups.iter().any(|g| &g.name == name) {
-                debugln!("Validator::validate_conflicts:iter: groups contains it...");
+                debugln!("Validator::validate_conflicts:iter:{}: is a group", name);
                 for n in self.arg_names_in_group(name) {
-                    debugln!(
-                        "Validator::validate_conflicts:iter:iter: Checking arg '{}' in group...",
-                        n
-                    );
+                    debugln!( "Validator::validate_conflicts:iter:{}:iter:{};", name, n);
                     if matcher.contains(n) {
-                        debugln!("Validator::validate_conflicts:iter:iter: matcher contains it...");
+                        debugln!("Validator::validate_conflicts:iter:{}:iter:{}: Was matched",
+                            name,
+                            n
+                        );
                         return Err(build_err!(self, n, matcher));
                     }
                 }
             } else if matcher.contains(name) {
-                debugln!("Validator::validate_conflicts:iter: matcher contains it...");
+                debugln!("Validator::validate_conflicts:iter:{}: Was matched", name);
                 return Err(build_err!(self, *name, matcher));
             }
         }

@@ -49,7 +49,7 @@ macro_rules! arg_post_processing {
         } else { sdebugln!("No"); }
 
         // Handle conflicts
-        debug!("arg_post_processing!: Does '{}' have conflicts...", $arg.to_string());
+        debug!("arg_post_processing!: Does '{}' have conflicts...", $arg.name);
         if let Some(ref bl) = $arg.conflicts_with {
             sdebugln!("Yes");
 
@@ -58,8 +58,7 @@ macro_rules! arg_post_processing {
                 debug!("arg_post_processing!: Has '{}' already been matched...", c);
                 if $matcher.contains(c) {
                     sdebugln!("Yes");
-                    // find who conflictsed us...
-                    $parser.conflicts.push(&$arg.name);
+                    $parser.conflicts.push(c);
                 } else {
                     sdebugln!("No");
                 }
@@ -72,7 +71,7 @@ macro_rules! arg_post_processing {
 
         // Add all required args which aren't already found in matcher to the master
         // list
-        debug!("arg_post_processing!: Does '{}' have requirements...", $arg.to_string());
+        debug!("arg_post_processing!: Does '{}' have requirements...", $arg.name);
         if let Some(ref reqs) = $arg.requires {
             sdebugln!("yes");
             for n in reqs.iter()
@@ -82,7 +81,7 @@ macro_rules! arg_post_processing {
                 $parser.required.push(n);
             }
         } else { sdebugln!("no"); }
-        debug!("arg_post_processing!: Does '{}' have conditional requirements...", $arg.to_string());
+        debug!("arg_post_processing!: Does '{}' have conditional requirements...", $arg.name);
         if let Some(ref reqs) = $arg.requires {
             sdebugln!("yes");
             for n in reqs.iter()
