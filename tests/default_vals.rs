@@ -3,7 +3,7 @@ extern crate regex;
 
 include!("../clap-test.rs");
 
-use clap::{App, Arg, ErrorKind};
+use clap::{App, Arg, ErrorKind, ArgSettings};
 
 #[test]
 fn opts() {
