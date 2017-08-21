@@ -38,7 +38,7 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c> {
 
     // Creates a usage string (*without title*) if one was not provided by the user manually.
     pub fn create_usage_no_title(&self, used: &[&'a str]) -> String {
-        debugln!("usage::create_usage_no_title;");
+        debugln!("usage::create_usage_no_title; used={:?}", used);
         if let Some(u) = self.app.override_usage {
             String::from(&*u)
         } else if used.is_empty() {
@@ -50,11 +50,9 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c> {
 
     // Creates a usage string for display in help messages (i.e. not for errors)
     pub fn create_help_usage(&self, incl_reqs: bool) -> String {
+        debugln!("usage::create_help_usage: incl_reqs={:?}", incl_reqs);
         let mut usage = String::with_capacity(75);
-        let name = self.app
-            ._usage
-            .as_ref()
-            .unwrap_or_else(|| self.app.bin_name.as_ref().unwrap_or(&self.app.name));
+        let name = self.app.bin_name.as_ref().unwrap_or(&self.app.name);
         usage.push_str(&*name);
         let req_string = if incl_reqs {
             let mut reqs: Vec<&str> = self.required.iter().map(|r| &**r).collect();

@@ -53,11 +53,12 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
 {
     pub fn new(app:  &'c mut App<'a, 'b>) -> Self {
         app._build();
+        let reqs = args!(app).filter(|a| a._settings.is_set(ArgSettings::Required)).map(|a| a.name).collect();
 
         let mut p = Parser {
             app: app,
             positionals: VecMap::new(),
-            required: Vec::new(),
+            required: reqs, 
             req_ifs: Vec::new(),
             conflicts: Vec::new(),
             overrides: Vec::new(),
