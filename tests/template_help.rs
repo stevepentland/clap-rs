@@ -1,7 +1,7 @@
 extern crate clap;
 extern crate regex;
 
-use clap::{App, SubCommand};
+use clap::{App, ArgSettings};
 
 include!("../clap-test.rs");
 
@@ -52,13 +52,13 @@ SUBCOMMANDS:
 #[test]
 fn with_template() {
     let app = app_example1().template(EXAMPLE1_TMPL_S);
-    assert!(test::compare_output(app, "MyApp --help", SIMPLE_TEMPLATE, false));
+    test::compare_output(app, "MyApp --help", SIMPLE_TEMPLATE, false);
 }
 
 #[test]
 fn custom_template() {
     let app = app_example1().template(EXAMPLE1_TMPS_F);
-    assert!(test::compare_output(app, "MyApp --help", CUSTOM_TEMPL_HELP, false));
+    test::compare_output(app, "MyApp --help", CUSTOM_TEMPL_HELP, false);
 }
 
 #[test]
@@ -68,7 +68,7 @@ fn template_empty() {
         .author("Kevin K. <kbknapp@gmail.com>")
         .about("Does awesome things")
         .template("");
-    assert!(test::compare_output(app, "MyApp --help", "", false));
+    test::compare_output(app, "MyApp --help", "", false);
 }
 
 #[test]
@@ -78,7 +78,7 @@ fn template_notag() {
         .author("Kevin K. <kbknapp@gmail.com>")
         .about("Does awesome things")
         .template("test no tag test");
-    assert!(test::compare_output(app, "MyApp --help", "test no tag test", false));
+    test::compare_output(app, "MyApp --help", "test no tag test", false);
 }
 
 #[test]
@@ -88,7 +88,7 @@ fn template_unknowntag() {
         .author("Kevin K. <kbknapp@gmail.com>")
         .about("Does awesome things")
         .template("test {unknown_tag} test");
-    assert!(test::compare_output(app, "MyApp --help", "test {unknown_tag} test", false));
+    test::compare_output(app, "MyApp --help", "test {unknown_tag} test", false);
 }
 
 #[test]
@@ -98,10 +98,10 @@ fn template_author_version() {
         .author("Kevin K. <kbknapp@gmail.com>")
         .about("Does awesome things")
         .template("{author}\n{version}\n{about}\n{bin}");
-    assert!(test::compare_output(app,
+    test::compare_output(app,
                                  "MyApp --help",
                                  "Kevin K. <kbknapp@gmail.com>\n1.0\nDoes awesome things\nMyApp",
-                                 false));
+                                 false);
 }
 
 // ----------

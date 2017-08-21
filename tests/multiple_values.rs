@@ -1,6 +1,6 @@
 extern crate clap;
 
-use clap::{App, Arg, ErrorKind, SubCommand};
+use clap::{App, Arg, ErrorKind, ArgSettings};
 
 #[test]
 fn option_long() {

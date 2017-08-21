@@ -3,7 +3,7 @@ extern crate regex;
 
 include!("../clap-test.rs");
 
-use clap::{App, Arg, ErrorKind};
+use clap::{App, Arg, ArgSettings, ErrorKind};
 
 #[cfg(feature = "suggestions")]
 static DYM: &'static str = "error: Found argument '--optio' which wasn't expected, or isn't valid in this context
@@ -349,7 +349,7 @@ fn leading_hyphen_with_only_pos_follows() {
 #[test]
 #[cfg(feature = "suggestions")]
 fn did_you_mean() {
-    assert!(test::compare_output(test::complex_app(), "clap-test --optio=foo", DYM, true));
+    test::compare_output(test::complex_app(), "clap-test --optio=foo", DYM, true);
 }
 
 #[test]

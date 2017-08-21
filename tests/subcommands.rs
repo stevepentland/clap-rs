@@ -3,7 +3,7 @@ extern crate regex;
 
 include!("../clap-test.rs");
 
-use clap::{App, Arg, SubCommand, ErrorKind};
+use clap::{App, Arg, ErrorKind, ArgSettings};
 
 static VISIBLE_ALIAS_HELP: &'static str = "clap-test 2.6
 
@@ -121,8 +121,8 @@ fn multiple_aliases() {
 #[test]
 #[cfg(feature = "suggestions")]
 fn subcmd_did_you_mean_output() {
-    assert!(test::compare_output(test::complex_app(), "clap-test subcm", DYM, true));
-    assert!(test::compare_output(test::complex_app(), "clap-test --subcmdarg foo", DYM2, true));
+    test::compare_output(test::complex_app(), "clap-test subcm", DYM, true);
+    test::compare_output(test::complex_app(), "clap-test --subcmdarg foo", DYM2, true);
 }
 
 #[test]
@@ -143,7 +143,7 @@ fn visible_aliases_help_output() {
                         .alias("invisible")
                         .visible_alias("dongle")
                         .visible_alias("done"));
-    assert!(test::compare_output(app, "clap-test --help", VISIBLE_ALIAS_HELP, false));
+    test::compare_output(app, "clap-test --help", VISIBLE_ALIAS_HELP, false);
 }
 
 #[test]
@@ -153,5 +153,5 @@ fn invisible_aliases_help_output() {
         .subcommand(App::new("test")
                         .about("Some help")
                         .alias("invisible"));
-    assert!(test::compare_output(app, "clap-test --help", INVISIBLE_ALIAS_HELP, false));
+    test::compare_output(app, "clap-test --help", INVISIBLE_ALIAS_HELP, false);
 }

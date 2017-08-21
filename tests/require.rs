@@ -3,7 +3,7 @@ extern crate regex;
 
 include!("../clap-test.rs");
 
-use clap::{App, Arg, ErrorKind, ArgGroup};
+use clap::{App, Arg, ErrorKind, ArgGroup, ArgSettings};
 
 static REQUIRE_EQUALS: &'static str = "error: The following required arguments were not provided:
     --opt=<FILE>
@@ -347,7 +347,7 @@ fn required_unless_one_err() {
 
 #[test]
 fn missing_required_output() {
-    assert!(test::compare_output(test::complex_app(), "clap-test -F", MISSING_REQ, true));
+    test::compare_output(test::complex_app(), "clap-test -F", MISSING_REQ, true);
 }
 
 // Conditional external requirements
@@ -458,10 +458,10 @@ fn required_if_val_present_fail_error_output() {
                  .required_if("target", "file")
                  .long("output"));
 
-    assert!(test::compare_output(app,
+    test::compare_output(app,
                                  "test --input somepath --target file",
                                  COND_REQ_IN_USAGE,
-                                 true));
+                                 true);
 }
 
 #[test]
@@ -547,5 +547,5 @@ fn require_eq() {
                  .require_equals(true)
                  .value_name("FILE")
                  .help("some"));
-    assert!(test::compare_output(app, "clap-test", REQUIRE_EQUALS, true));
+    test::compare_output(app, "clap-test", REQUIRE_EQUALS, true);
 }

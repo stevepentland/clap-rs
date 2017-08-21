@@ -1,6 +1,6 @@
 extern crate clap;
 
-use clap::{App, Arg, ErrorKind};
+use clap::{App, Arg, ErrorKind, ArgSettings};
 
 #[test]
 fn only_pos_follow() {

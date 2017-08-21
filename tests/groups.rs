@@ -132,7 +132,7 @@ fn req_group_usage_string() {
                    .args(&["base", "delete"])
                    .required(true));
 
-    assert!(test::compare_output(app, "clap-test", REQ_GROUP_USAGE, true));
+    test::compare_output(app, "clap-test", REQ_GROUP_USAGE, true);
 }
 
 #[test]
@@ -144,7 +144,7 @@ fn req_group_with_conflict_usage_string() {
                    .args(&["base", "delete"])
                    .required(true));
 
-    assert!(test::compare_output(app, "clap-test --delete base", REQ_GROUP_CONFLICT_REV, true));
+    test::compare_output(app, "clap-test --delete base", REQ_GROUP_CONFLICT_REV, true);
 }
 
 #[test]
@@ -156,10 +156,10 @@ fn req_group_with_conflict_rev_usage_string() {
                    .args(&["base", "delete"])
                    .required(true));
 
-    assert!(test::compare_output(app,
+    test::compare_output(app,
                                  "clap-test base --delete",
                                  REQ_GROUP_CONFLICT_USAGE,
-                                 true));
+                                 true);
 }
 
 #[test]
