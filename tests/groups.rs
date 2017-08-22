@@ -13,14 +13,14 @@ USAGE:
 
 For more information try --help";
 
-static REQ_GROUP_CONFLICT_USAGE: &'static str = "error: The argument '<base>' cannot be used with '--delete'
+static REQ_GROUP_CONFLICT_USAGE: &'static str = "error: The argument '[base]' cannot be used with '--delete'
 
 USAGE:
     clap-test <base|--delete>
 
 For more information try --help";
 
-static REQ_GROUP_CONFLICT_REV: &'static str = "error: The argument '--delete' cannot be used with 'base'
+static REQ_GROUP_CONFLICT_REV: &'static str = "error: The argument '--delete' cannot be used with '[base]'
 
 USAGE:
     clap-test <base|--delete>
