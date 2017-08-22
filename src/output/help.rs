@@ -63,7 +63,7 @@ pub struct HelpWriter<'a, 'b, 'c, 'd> where 'a: 'b, 'b: 'c, 'c: 'd {
     use_long: bool,
 }
 
-// Public Functions
+// Public Initialization Functions
 impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
     /// Create a new `Help` instance.
     pub fn new(p: &'d Parser<'a, 'b, 'c>, use_stderr: bool) -> Self {
@@ -168,6 +168,7 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
     }
 }
 
+// Handles Args
 impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
     /// Writes help for each argument in the order they were declared to the wrapped stream.
     fn write_args_unsorted<'z, W: Write, I: 'z>(&mut self, w: &mut W, args: I) -> io::Result<()>
@@ -248,29 +249,29 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
         Ok(())
     }
 
-    /// Writes help for an subcommand to the wrapped stream.
-    fn write_subcommand_as_arg<W: Write>(&mut self, w: &mut W, sc: &App<'a, 'b>) -> io::Result<()> {
-        debugln!("HelpWriter::write_subcommand_as_arg;");
-        let spec_vals = self.subcommand_spec_vals(sc);
-        self.subcommand_help(w, sc, &*spec_vals)?;
-        Ok(())
-    }
-
     /// Writes help for an argument to the wrapped stream.
     fn write_arg<W: Write>(&mut self, w: &mut W, arg: &Arg<'a, 'b>, arg_str: &str, arg_len: usize) -> io::Result<()> {
         debugln!("HelpWriter::write_arg:{};", arg.name);
-        self.short(w, arg, arg_str)?;
+        write!(w, "{}", TAB)?;
+        if arg.long.is_some() {
+            self.short(w, arg, arg_str)?;
+        }
         color!(self, w, "{}", arg_str, good)?;
-        // try!(self.long(w, arg));
         let spec_vals = self.spec_vals(arg);
-        self.help(w, arg, &*spec_vals, arg_len)?;
+        let h = if self.use_long {
+            arg.long_help.unwrap_or_else(|| arg.help.unwrap_or(""))
+        } else {
+            arg.help.unwrap_or_else(|| arg.long_help.unwrap_or(""))
+        };
+        let h_w = str_width(h) + str_width(&*spec_vals);
+        self.write_arg_spaces(w, arg, &*spec_vals, arg_len, h, h_w)?;
+        self.help(w, arg, &*spec_vals, arg_len, h, h_w)?;
         Ok(())
     }
 
     /// Writes argument's short command to the wrapped stream.
     fn short<W: Write>(&mut self, w: &mut W, arg: &Arg<'a, 'b>, arg_str: &str) -> io::Result<()> {
         debugln!("HelpWriter::short:{};", arg.name);
-        write!(w, "{}", TAB)?;
         if let Some(s) = arg.short {
             if arg.long.is_some() {
                 color!(self, w, "-{}, ", s, good)
@@ -284,160 +285,7 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
         }
     }
 
-    fn write_before_after_help<W: Write>(&mut self, w: &mut W, h: &str) -> io::Result<()> {
-        debugln!(
-            "HelpWriter::write_before_after_help: Term width...{}",
-            self.term_width
-        );
-        let mut help = String::from(h);
-        // determine if our help fits or needs to wrap
-        let too_long = str_width(h) >= self.term_width;
-
-        if too_long || h.contains("{n}") {
-            debugln!("HelpWriter::write_before_after_help: width={}, Too long...", 
-                str_width(&*help)
-            );
-            // Determine how many newlines we need to insert
-            help = wrap_help(&help.replace("{n}", "\n"), self.term_width);
-        }
-        write!(w, "{}", help)?;
-        Ok(())
-    }
-
     /// Writes argument's help to the wrapped stream.
-    fn help<W: Write>(&mut self, w: &mut W, arg: &Arg<'a, 'b>, spec_vals: &str, arg_len: usize) -> io::Result<()> {
-        debugln!("HelpWriter::help:{};", arg.name);
-
-        // Write sep
-        let h = if self.use_long {
-            arg.long_help.unwrap_or_else(|| arg.help.unwrap_or(""))
-        } else {
-            arg.help.unwrap_or_else(|| arg.long_help.unwrap_or(""))
-        };
-        let h_w = str_width(h) + str_width(&*spec_vals);
-        let nlh = self.next_line_help || arg.is_set(ArgSettings::NextLineHelp);
-        let taken = self.longest + 12;
-        self.force_next_line = !nlh && self.term_width >= taken &&
-            (taken as f32 / self.term_width as f32) > 0.40 &&
-            h_w > (self.term_width - taken);
-
-        if arg._has_switch() {
-            if !(nlh || self.force_next_line) {
-                // subtract ourself
-                let mut spcs = self.longest - arg_len;
-                // Since we're writing spaces from the tab point we first need to know if we
-                // had a long and short, or just short
-                if arg.long.is_some() {
-                    // Only account 4 after the val
-                    spcs += 4;
-                } else {
-                    // Only account for ', --' + 4 after the val
-                    spcs += 8;
-                }
-
-                write_nspaces!(w, spcs);
-            }
-        } else if !(nlh || self.force_next_line) {
-            write_nspaces!(
-                w,
-                self.longest + 4 - (str_width(arg.to_string().as_str()))
-            );
-        }
-
-        let mut help = String::from(h) + spec_vals;
-        let nlh = self.next_line_help || arg.is_set(ArgSettings::NextLineHelp) || self.use_long;
-        debugln!("HelpWriter::help:{}: Next Line...{:?}", arg.name, nlh);
-
-        let spcs = if nlh || self.force_next_line {
-            12 // "tab" * 3
-        } else {
-            self.longest + 12
-        };
-
-        let too_long = spcs + h_w >= self.term_width;
-
-        // Is help on next line, if so then indent
-        if nlh || self.force_next_line {
-            write!(w, "\n{}{}{}", TAB, TAB, TAB)?;
-        }
-
-        if too_long && spcs <= self.term_width || h.contains("{n}") {
-            debugln!("HelpWriter::help:{}: help width={}, too long", arg.name, str_width(&*help));
-            // Determine how many newlines we need to insert
-            let avail_chars = self.term_width - spcs;
-            debugln!("HelpWriter::help:{}: Usable space...{}", arg.name, avail_chars);
-            help = wrap_help(&help.replace("{n}", "\n"), avail_chars);
-        }
-        if let Some(part) = help.lines().next() {
-            write!(w, "{}", part)?;
-        }
-        for part in help.lines().skip(1) {
-            write!(w, "\n")?;
-            if nlh || self.force_next_line {
-                write!(w, "{}{}{}", TAB, TAB, TAB)?;
-            } else if arg._has_switch() {
-                write_nspaces!(w, self.longest + 12);
-            } else {
-                write_nspaces!(w, self.longest + 8);
-            }
-            write!(w, "{}", part)?;
-        }
-        if !help.contains('\n') && (nlh || self.force_next_line) {
-            write!(w, "\n")?;
-        }
-        Ok(())
-    }
-
-    /// Writes argument's help to the wrapped stream.
-    fn subcommand_help<W: Write>(&mut self, w: &mut W, arg: &App<'a, 'b>, spec_vals: &str) -> io::Result<()> {
-        debugln!("HelpWriter::subcommand_help:{}:;", arg.name);
-        let h = if self.use_long {
-            arg.long_about.unwrap_or_else(|| arg.about.unwrap_or(""))
-        } else {
-            arg.about.unwrap_or_else(|| arg.long_about.unwrap_or(""))
-        };
-        let mut help = String::from(h) + spec_vals;
-        let nlh = self.next_line_help || self.force_next_line || self.use_long;
-        debugln!("HelpWriter::subcommand_help:{}: Next Line...{:?}", arg.name, nlh);
-
-        let spcs = if nlh || self.force_next_line {
-            12 // "tab" * 3
-        } else {
-            self.longest + 12
-        };
-
-        let too_long = spcs + str_width(h) + str_width(&*spec_vals) >= self.term_width;
-
-        // Is help on next line, if so then indent
-        if nlh || self.force_next_line {
-            write!(w, "\n{}{}{}", TAB, TAB, TAB)?;
-        }
-
-        if too_long && spcs <= self.term_width || h.contains("{n}") {
-            debugln!("HelpWriter::subcommand_help:{}: help_width={}, Too long...", arg.name, str_width(&*help));
-            // Determine how many newlines we need to insert
-            let avail_chars = self.term_width - spcs;
-            debugln!("HelpWriter::subcommand_help:{}: Usable space...{}", arg.name, avail_chars);
-            help = wrap_help(&help.replace("{n}", "\n"), avail_chars);
-        }
-        if let Some(part) = help.lines().next() {
-            write!(w, "{}", part)?;
-        }
-        for part in help.lines().skip(1) {
-            write!(w, "\n")?;
-            if nlh || self.force_next_line {
-                write!(w, "{}{}{}", TAB, TAB, TAB)?;
-            } else {
-                write_nspaces!(w, self.longest + 8);
-            }
-            write!(w, "{}", part)?;
-        }
-        if !help.contains('\n') && (nlh || self.force_next_line) {
-            write!(w, "\n")?;
-        }
-        Ok(())
-    }
-
     fn spec_vals(&self, a: &Arg) -> String {
         debugln!("HelpWriter::spec_vals:{}", a.name);
         let mut spec_vals = vec![];
@@ -488,10 +336,140 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
         spec_vals.join(" ")
     }
 
+    /// Writes argument's help to the wrapped stream.
+    fn help<W: Write>(&mut self, w: &mut W, arg: &Arg<'a, 'b>, spec_vals: &str, arg_len: usize, h: &str, h_w: usize) -> io::Result<()> {
+        debugln!("HelpWriter::help:{};", arg.name);
+
+        let mut help = String::from(h) + spec_vals;
+        let nlh = self.next_line_help || arg.is_set(ArgSettings::NextLineHelp) || self.use_long;
+        debugln!("HelpWriter::help:{}: Next Line...{:?}", arg.name, nlh);
+
+        let spcs = if nlh || self.force_next_line {
+            12 // "tab" * 3
+        } else {
+            self.longest + 12
+        };
+
+        let too_long = spcs + h_w >= self.term_width;
+
+        // Is help on next line, if so then indent
+        if nlh || self.force_next_line {
+            write!(w, "\n{}{}{}", TAB, TAB, TAB)?;
+        }
+
+        if too_long && spcs <= self.term_width || h.contains("{n}") {
+            debugln!("HelpWriter::help:{}: help width={}, too long", arg.name, str_width(&*help));
+            // Determine how many newlines we need to insert
+            let avail_chars = self.term_width - spcs;
+            debugln!("HelpWriter::help:{}: Usable space...{}", arg.name, avail_chars);
+            help = wrap_help(&help.replace("{n}", "\n"), avail_chars);
+        }
+        if let Some(part) = help.lines().next() {
+            write!(w, "{}", part)?;
+        }
+        for part in help.lines().skip(1) {
+            write!(w, "\n")?;
+            if nlh || self.force_next_line {
+                write!(w, "{}{}{}", TAB, TAB, TAB)?;
+            } else if arg._has_switch() {
+                write_nspaces!(w, self.longest + 12);
+            } else {
+                write_nspaces!(w, self.longest + 8);
+            }
+            write!(w, "{}", part)?;
+        }
+        if !help.contains('\n') && (nlh || self.force_next_line) {
+            write!(w, "\n")?;
+        }
+        Ok(())
+    }
+
+    fn write_arg_spaces<W: Write>(&mut self, w: &mut W, arg: &Arg, spec_vals: &str, arg_len: usize, h: &str, h_w: usize) -> io::Result<()> {
+        // Write sep
+        let nlh = self.next_line_help || arg.is_set(ArgSettings::NextLineHelp);
+        let taken = self.longest + 12;
+        self.force_next_line = !nlh && self.term_width >= taken &&
+            (taken as f32 / self.term_width as f32) > 0.40 &&
+            h_w > (self.term_width - taken);
+
+        if arg._has_switch() {
+            if !(nlh || self.force_next_line) {
+                // subtract ourself
+                let mut spcs = self.longest - arg_len;
+                // Since we're writing spaces from the tab point we first need to know if we
+                // had a long and short, or just short
+                if arg.long.is_some() {
+                    // Only account 4 after the val
+                    spcs += 4;
+                } else {
+                    // Only account for ', --' + 4 after the val
+                    spcs += 8;
+                }
+
+                write_nspaces!(w, spcs);
+            }
+        } else if !(nlh || self.force_next_line) {
+            write_nspaces!(
+                w,
+                self.longest + 4 - arg_len
+            );
+        }
+
+        Ok(())
+    }
+}
+
+// Handles Subcommands
+impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
+    /// Writes help for subcommands of a Parser Object to the wrapped stream.
+    fn write_subcommands<W: Write>(&mut self, w: &mut W) -> io::Result<()> {
+        debugln!("HelpWriter::write_subcommands;");
+        // The shortest an arg can legally be is 2 (i.e. '-x')
+        self.longest = 2;
+        let mut ord_m = VecMap::new();
+        for sc in subcommands!(self.parser.app)
+            .filter(|s| !s.is_set(AppSettings::Hidden))
+        {
+            let btm = ord_m.entry(sc.display_order).or_insert(BTreeMap::new());
+            self.longest = cmp::max(self.longest, str_width(&*sc.name));
+            btm.insert(sc.name.clone(), sc);
+        }
+
+        let mut first = true;
+        for btm in ord_m.values() {
+            for sc in btm.values() {
+                if first {
+                    first = false;
+                } else {
+                    w.write_all(b"\n")?;
+                }
+                self.write_subcommand_as_arg(w, sc)?;
+            }
+        }
+        Ok(())
+    }
+
+
+    /// Writes help for an subcommand to the wrapped stream.
+    fn write_subcommand_as_arg<W: Write>(&mut self, w: &mut W, sc: &App<'a, 'b>) -> io::Result<()> {
+        debugln!("HelpWriter::write_subcommand_as_arg;");
+        write!(w, "{}", TAB)?;
+        color!(self, w, "{}", sc.name, good)?;
+        let spec_vals = self.subcommand_spec_vals(sc);
+        let h = if self.use_long {
+            sc.long_about.unwrap_or_else(|| sc.about.unwrap_or(""))
+        } else {
+            sc.about.unwrap_or_else(|| sc.long_about.unwrap_or(""))
+        };
+        let h_w = str_width(h) + str_width(&*spec_vals);
+        self.write_subcommand_spaces(w, sc, &*spec_vals, h_w)?;
+        self.subcommand_help(w, sc, &*spec_vals, h, h_w)?;
+        Ok(())
+    }
+
     fn subcommand_spec_vals(&self, a: &App) -> String {
         debugln!("HelpWriter::spec_vals:{}", a.name);
         let mut spec_vals = vec![];
-        // @TODO-v3-alpha: consider visible aliases
         if let Some(ref aliases) = a.visible_aliases {
             debugln!("HelpWriter::spec_vals:{}: Found aliases...{:?}", a.name, aliases);
             spec_vals.push(format!(
@@ -509,10 +487,67 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
         }
         spec_vals.join(" ")
     }
+
+    fn write_subcommand_spaces<W: Write>(&mut self, w: &mut W, sc: &App, spec_vals: &str, h_w: usize) -> io::Result<()> {
+        debugln!("HelpWriter::write_subcommand_spaces:{};", sc.name);
+        // Write sep
+        let nlh = self.next_line_help || sc.is_set(AppSettings::NextLineHelp) || self.use_long;
+        let taken = self.longest + 8; // TAB*2
+        self.force_next_line = !nlh && self.term_width >= taken &&
+            (taken as f32 / self.term_width as f32) > 0.40 &&
+            h_w > (self.term_width - taken);
+
+        if !(nlh || self.force_next_line) {
+                // subtract ourself
+                let mut spcs = self.longest - str_width(&*sc.name) + 4;
+                write_nspaces!(w, spcs);
+        } else {
+            write!(w, "\n{}{}{}", TAB, TAB, TAB)?;
+        }
+
+        Ok(())
+    }
+
+    fn subcommand_help<W: Write>(&mut self, w: &mut W, sc: &App<'a, 'b>, spec_vals: &str, h: &str, h_w: usize) -> io::Result<()> {
+        debugln!("HelpWriter::subcommand_help:{}:;", sc.name);
+        let mut help = String::from(h) + spec_vals;
+        let nlh = self.next_line_help || self.force_next_line || self.use_long;
+
+        let taken = if nlh || self.force_next_line {
+            12 // "tab" * 3
+        } else {
+            self.longest + 8
+        };
+
+        let too_long = taken + h_w >= self.term_width;
+
+        if too_long && taken <= self.term_width || h.contains("{n}") {
+            debugln!("HelpWriter::subcommand_help:{}: help_width={}, Too long...", sc.name, h_w);
+            // Determine how many newlines we need to insert
+            let avail_chars = self.term_width - taken;
+            debugln!("HelpWriter::subcommand_help:{}: Usable space...{}", sc.name, avail_chars);
+            help = wrap_help(&help.replace("{n}", "\n"), avail_chars);
+        }
+        if let Some(part) = help.lines().next() {
+            write!(w, "{}", part)?;
+        }
+        for part in help.lines().skip(1) {
+            write!(w, "\n")?;
+            if nlh || self.force_next_line {
+                write!(w, "{}{}{}", TAB, TAB, TAB)?;
+            } else {
+                write_nspaces!(w, self.longest + 8);
+            }
+            write!(w, "{}", part)?;
+        }
+        if !help.contains('\n') && (nlh || self.force_next_line) {
+            write!(w, "\n")?;
+        }
+        Ok(())
+    }
 }
 
-
-// Methods to write Parser help.
+// Public Methods to write help.
 impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
     /// Writes help for all arguments (options, flags, args, subcommands)
     /// including titles of a Parser Object to the wrapped stream.
@@ -579,35 +614,6 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
             try!(self.write_subcommands(w));
         }
 
-        Ok(())
-    }
-
-    /// Writes help for subcommands of a Parser Object to the wrapped stream.
-    fn write_subcommands<W: Write>(&mut self, w: &mut W) -> io::Result<()> {
-        debugln!("HelpWriter::write_subcommands;");
-        // The shortest an arg can legally be is 2 (i.e. '-x')
-        self.longest = 2;
-        let mut ord_m = VecMap::new();
-        for sc in subcommands!(self.parser.app)
-            .filter(|s| !s.is_set(AppSettings::Hidden))
-        {
-            let btm = ord_m.entry(sc.display_order).or_insert(BTreeMap::new());
-            self.longest = cmp::max(self.longest, str_width(sc.name.as_str()));
-            //self.longest = cmp::max(self.longest, sc.p.app.name.len());
-            btm.insert(sc.name.clone(), sc.clone());
-        }
-
-        let mut first = true;
-        for btm in ord_m.values() {
-            for sc in btm.values() {
-                if first {
-                    first = false;
-                } else {
-                    w.write_all(b"\n")?;
-                }
-                self.write_subcommand_as_arg(w, sc)?;
-            }
-        }
         Ok(())
     }
 
@@ -695,6 +701,27 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
 
         w.flush().map_err(ClapError::from)
     }
+
+    fn write_before_after_help<W: Write>(&mut self, w: &mut W, h: &str) -> io::Result<()> {
+        debugln!(
+            "HelpWriter::write_before_after_help: Term width...{}",
+            self.term_width
+        );
+        let mut help = String::from(h);
+        // determine if our help fits or needs to wrap
+        let too_long = str_width(h) >= self.term_width;
+
+        if too_long || h.contains("{n}") {
+            debugln!("HelpWriter::write_before_after_help: width={}, Too long...", 
+                str_width(&*help)
+            );
+            // Determine how many newlines we need to insert
+            help = wrap_help(&help.replace("{n}", "\n"), self.term_width);
+        }
+        write!(w, "{}", help)?;
+        Ok(())
+    }
+
 }
 
 /// Possible results for a copying function that stops when a given

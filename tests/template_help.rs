@@ -1,7 +1,7 @@
 extern crate clap;
 extern crate regex;
 
-use clap::{App, ArgSettings};
+use clap::App;
 
 include!("../clap-test.rs");
 
@@ -51,13 +51,13 @@ SUBCOMMANDS:
 
 #[test]
 fn with_template() {
-    let app = app_example1().template(EXAMPLE1_TMPL_S);
+    let app = app_example1().help_template(EXAMPLE1_TMPL_S);
     test::compare_output(app, "MyApp --help", SIMPLE_TEMPLATE, false);
 }
 
 #[test]
 fn custom_template() {
-    let app = app_example1().template(EXAMPLE1_TMPS_F);
+    let app = app_example1().help_template(EXAMPLE1_TMPS_F);
     test::compare_output(app, "MyApp --help", CUSTOM_TEMPL_HELP, false);
 }
 
@@ -67,7 +67,7 @@ fn template_empty() {
         .version("1.0")
         .author("Kevin K. <kbknapp@gmail.com>")
         .about("Does awesome things")
-        .template("");
+        .help_template("");
     test::compare_output(app, "MyApp --help", "", false);
 }
 
@@ -77,7 +77,7 @@ fn template_notag() {
         .version("1.0")
         .author("Kevin K. <kbknapp@gmail.com>")
         .about("Does awesome things")
-        .template("test no tag test");
+        .help_template("test no tag test");
     test::compare_output(app, "MyApp --help", "test no tag test", false);
 }
 
@@ -87,7 +87,7 @@ fn template_unknowntag() {
         .version("1.0")
         .author("Kevin K. <kbknapp@gmail.com>")
         .about("Does awesome things")
-        .template("test {unknown_tag} test");
+        .help_template("test {unknown_tag} test");
     test::compare_output(app, "MyApp --help", "test {unknown_tag} test", false);
 }
 
@@ -97,7 +97,7 @@ fn template_author_version() {
         .version("1.0")
         .author("Kevin K. <kbknapp@gmail.com>")
         .about("Does awesome things")
-        .template("{author}\n{version}\n{about}\n{bin}");
+        .help_template("{author}\n{version}\n{about}\n{bin}");
     test::compare_output(app,
                                  "MyApp --help",
                                  "Kevin K. <kbknapp@gmail.com>\n1.0\nDoes awesome things\nMyApp",
