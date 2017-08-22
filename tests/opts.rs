@@ -169,8 +169,8 @@ fn opts_using_long_space() {
 #[test]
 fn opts_with_empty_values() {
     let r = App::new("opts")
-        .arg("--flag [flag]... 'some flag'")
-        .get_matches_from_safe(vec!["", "--flag", "", "test"]);
+        .arg(Arg::from("--flag [flag]... 'some flag'").set(ArgSettings::EmptyValues))
+        .get_matches_from_safe(vec!["opts", "--flag", "", "test"]);
     assert!(r.is_ok());
     let m = r.unwrap();
     assert!(m.is_present("flag"));
