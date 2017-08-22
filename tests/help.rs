@@ -29,9 +29,9 @@ OPTIONS:
     -o, --option <opt>...            tests options
 
 ARGS:
-    <positional>        tests positionals
-    <positional2>       tests positionals with exclusions
-    <positional3>...    tests specific values [values: vi, emacs]
+    [positional]        tests positionals
+    [positional2]       tests positionals with exclusions
+    [positional3]...    tests specific values [values: vi, emacs]
 
 SUBCOMMANDS:
     help      Prints this message or the help of the given subcommand(s)
@@ -51,7 +51,7 @@ OPTIONS:
     -o, --opt <FILE>    tests options
 
 ARGS:
-    <PATH>    
+    [PATH]    
 
 SUBCOMMANDS:
     help    Prints this message or the help of the given subcommand(s)
@@ -72,7 +72,7 @@ OPTIONS:
     -o, --opt <FILE>    tests options
 
 ARGS:
-    <PATH>    
+    [PATH]    
 
 SUBCOMMANDS:
     help    Prints this message or the help of the given subcommand(s)
@@ -122,7 +122,7 @@ OPTIONS:
     -s, --subcmdarg <subcmdarg>    tests other args
 
 ARGS:
-    <scpositional>    tests positionals";
+    [scpositional]    tests positionals";
 
 // Using number_of_values(1) with multiple(true) misaligns help message
 static ISSUE_760: &'static str = "ctest 0.1
@@ -252,7 +252,7 @@ FLAGS:
     -V, --version    Prints version information
 
 ARGS:
-    <mode>    x, max, maximum   20 characters, contains
+    [mode]    x, max, maximum   20 characters, contains
               symbols.
               l, long           Copy-friendly, 14
               characters, contains symbols.
@@ -290,8 +290,8 @@ OPTIONS:
     -s, --some <some>         some option
 
 ARGS:
-    <arg1>       some option
-    <arg2>...    some option";
+    [arg1]       some option
+    [arg2]...    some option";
 
 static ISSUE_777: &'static str = "A app with a crazy very long long
 long name hahaha 1.0
@@ -861,10 +861,8 @@ fn customize_version_and_help() {
         .version("0.1")
         .author("Nobody <odysseus@example.com>")
         .about("You can customize the version and help text")
-        .help_short("H")
-        .help_message("Print help information")
-        .version_short("v")
-        .version_message("Print version information");
+        .mut_arg("help", |a| a.short("H").help("Print help information"))
+        .mut_arg("version", |a| a.short("v").help("Print version information"));
     test::compare_output(app, "customize --help", CUSTOM_VERSION_AND_HELP, false);
 }
 

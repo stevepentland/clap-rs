@@ -66,11 +66,11 @@ mod test {
                 Arg::from("--maxvals3 [maxvals]... 'Tests 3 max vals'").max_values(3)
             ])
             .subcommand(App::new("subcmd")
-                                    .about("tests subcommands")
-                                    .version("0.1")
-                                    .author("Kevin K. <kbknapp@gmail.com>")
-                                    .arg("-o --option [scoption]... 'tests options'")
-                                    .arg("-s --subcmdarg [subcmdarg] 'tests other args'")
-                                    .arg("[scpositional] 'tests positionals'"))
+                 .about("tests subcommands")
+                 .version("0.1")
+                 .author("Kevin K. <kbknapp@gmail.com>")
+                 .arg("-o --option [scoption]... 'tests options'")
+                 .arg("-s --subcmdarg [subcmdarg] 'tests other args'")
+                 .arg("[scpositional] 'tests positionals'"))
     }
 }
