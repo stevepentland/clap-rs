@@ -14,11 +14,11 @@ USAGE:
 For more information try --help";
 
 static MISSING_REQ: &'static str = "error: The following required arguments were not provided:
-    <positional2>
+    [positional2]
     --long-option-2 <option2>
 
 USAGE:
-    clap-test <positional2> -F --long-option-2 <option2>
+    clap-test [positional2] -F --long-option-2 <option2>
 
 For more information try --help";
 
