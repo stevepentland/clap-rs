@@ -3,7 +3,7 @@ extern crate regex;
 
 use std::str;
 
-use clap::{App, Arg, ErrorKind};
+use clap::{App, ErrorKind};
 
 include!("../clap-test.rs");
 
@@ -36,7 +36,7 @@ fn version_long() {
 #[test]
 fn complex_version_output() {
     let mut a = App::new("clap-test").version("v1.4.8");
-    let _ = a.get_matches_from_safe_borrow(vec![""]);
+    let _ = a.get_matches_from_safe_mut(vec![""]);
 
     // Now we check the output of print_version()
     let mut ver = vec![];
@@ -50,9 +50,9 @@ fn override_ver() {
         .author("Kevin K.")
         .about("tests stuff")
         .version("1.3")
-        .arg(Arg::from("-v, --version 'some version'"))
-        .get_matches_from_safe(vec!["test", "--version"]);
+        .mut_arg("version", |a| a.short("v").help("some version"))
+        .get_matches_from_safe(vec!["test", "-v"]);
 
-    assert!(m.is_ok());
-    assert!(m.unwrap().is_present("version"));
+    assert!(m.is_err());
+    assert_eq!(m.unwrap_err().kind, ErrorKind::VersionDisplayed);
 }

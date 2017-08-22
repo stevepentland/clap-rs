@@ -805,12 +805,33 @@ impl<'a, 'b> App<'a, 'b> {
     /// @DOCS @TODO-v3-release: add docs
     pub fn mut_arg<F>(mut self, arg: &str, f: F) -> Self
     where
-        F: Fn(&mut Arg<'a, 'b>) -> Arg<'a, 'b>,
+        F: Fn(Arg<'a, 'b>) -> Arg<'a, 'b>,
     {
-        self.args.iter_mut()
-            .find(|a| a.name == arg)
-            .or(self.global_args.iter_mut().find(|a| a.name == arg))
-            .map(f);
+        let mut idx = 0;
+        let mut found = false;
+        for (i, a) in self.args.iter().enumerate() {
+            if a.name == arg {
+                idx = i;
+                found = true;
+                break;
+            }
+        }
+        if !found {
+            for (i, a) in self.global_args.iter().enumerate() {
+                if a.name == arg {
+                    idx = i;
+                    found = true;
+                    break;
+                }
+            }
+        } else {
+            let mut arg = self.args.swap_remove(idx);
+            self.args.push(f(arg));
+            return self;
+        }
+        assert!(found, "Invalid Arg key {}; argument does not exist", arg);
+        let mut arg = self.global_args.swap_remove(idx);
+        self.global_args.push(f(arg));
         self
     }
 

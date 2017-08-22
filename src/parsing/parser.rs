@@ -1284,14 +1284,14 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
             "Parser::check_for_help_and_version_char: Checking if -{} is help or version...",
             arg
         );
-        if let Some(h) = self.app.help_short {
-            if arg == h { //&& self.is_set(AS::NeedsLongHelp) {
+        if let Some(h) = flags!(self.app).filter(|f| f.name == "help").next() {
+            if Some(arg) == h.short { //&& self.is_set(AS::NeedsLongHelp) {
                 sdebugln!("Help");
                 return Err(self._help(false));
             }
         }
-        if let Some(v) = self.app.version_short {
-            if arg == v { //&& self.is_set(AS::NeedsLongVersion) {
+        if let Some(v) = flags!(self.app).filter(|f| f.name == "version").next() {
+            if Some(arg) == v.short { //&& self.is_set(AS::NeedsLongVersion) {
                 sdebugln!("Version");
                 return Err(self._version(false));
             }
