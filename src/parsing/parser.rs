@@ -1471,18 +1471,18 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
     //
 
     pub fn groups_for_arg(&self, name: &str) -> Option<Vec<&'a str>> {
-        debugln!("Parser::groups_for_arg: name={}", name);
+        debugln!("Parser::groups_for_arg:{};", name);
 
         if self.app.groups.is_empty() {
-            debugln!("Parser::groups_for_arg: No groups defined");
+            debugln!("Parser::groups_for_arg:{}: No groups defined", name);
             return None;
         }
         let mut res = vec![];
-        debugln!("Parser::groups_for_arg: Searching through groups...");
         for grp in &self.app.groups {
+            debugln!("Parser::groups_for_arg:{}:iter:{}", name, grp.name);
             for a in &grp.args {
                 if a == &name {
-                    sdebugln!("\tFound '{}'", grp.name);
+                    debugln!("Parser::groups_for_arg:{}:iter:{}: Found", name, grp.name);
                     res.push(&*grp.name);
                 }
             }
@@ -1591,6 +1591,9 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
 
     #[inline]
     pub fn has_subcommands(&self) -> bool { !self.app.subcommands.is_empty() }
+
+    #[inline]
+    pub fn is_group(&self, name: &str) -> bool { find!(self.app, &name, groups).is_some() }
 
     // #[inline]
     // pub fn has_visible_opts(&self) -> bool {

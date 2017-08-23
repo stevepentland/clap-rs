@@ -406,32 +406,26 @@ impl Error {
     #[doc(hidden)]
     pub fn argument_conflict<U>(
         arg: &Arg,
-        other: Option<String>,
+        other: String,
         usage: U,
         color: ColorWhen,
     ) -> Self
     where
         U: Display,
     {
-        let mut v = vec![arg.name.to_owned()];
+        let mut v = vec![arg.name.to_owned(), other.to_owned()];
         let c = Colorizer::new(ColorizerOption {
             use_stderr: true,
             when: color,
         });
         Error {
             message: format!(
-                "{} The argument '{}' cannot be used with {}\n\n\
+                "{} The argument '{}' cannot be used with '{}'\n\n\
                             {}\n\n\
                             For more information try {}",
                 c.error("error:"),
                 c.warning(&*arg.to_string()),
-                match other {
-                    Some(ref arg) => {
-                        v.push(arg.to_owned());
-                        c.warning(format!("'{}'", arg))
-                    }
-                    None => c.none("one or more of the other specified arguments".to_owned()),
-                },
+                c.warning(other),
                 usage,
                 c.good("--help")
             ),

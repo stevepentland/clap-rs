@@ -53,6 +53,7 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c> {
             });
         }
         try!(self.validate_conflicts(matcher));
+        try!(self.validate_group_conflicts(matcher));
         if !(self.is_set(AS::SubcommandsNegateReqs) && subcmd_name.is_some()) && !reqs_validated {
             try!(self.validate_required(matcher));
         }
@@ -131,45 +132,74 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c> {
     }
 
     fn validate_conflicts(&self, matcher: &mut ArgMatcher<'a>) -> ClapResult<()> {
-        debugln!(
-            "Validator::validate_conflicts: conflicts={:?}",
-            self.conflicts
-        );
-        macro_rules! build_err {
-            ($parser:expr, $name:expr, $matcher:ident) => ({
-                debugln!("build_err!: name={}", $name);
-                let c_with = find_matched_that_contains_arg_in!($parser.app, &$name, conflicts_with, &$matcher)
-                    .map_or(None, |aa| Some(format!("{}", aa)));
-                debugln!("build_err!: '{:?}' conflicts with '{}'", c_with, &$name);
-                $matcher.remove(&$name);
-                let usg = $parser.create_error_usage($matcher, None);
-                if let Some(p) = args!($parser.app).find(|a| a.name == $name) {
-                    debugln!("build_err!: It was a positional...");
-                    ClapError::argument_conflict(p, c_with, &*usg, self.color())
-                } else {
-                    panic!(INTERNAL_ERROR_MSG)
-                }
-            });
-        }
+        debugln!( "Validator::validate_conflicts;" );
 
-        for name in &self.conflicts {
-            debugln!( "Validator::validate_conflicts:iter:{};", name );
-            if self.app.groups.iter().any(|g| &g.name == name) {
-                debugln!("Validator::validate_conflicts:iter:{}: is a group", name);
-                for n in self.arg_names_in_group(name) {
-                    debugln!( "Validator::validate_conflicts:iter:{}:iter:{};", name, n);
-                    if matcher.contains(n) {
-                        debugln!("Validator::validate_conflicts:iter:{}:iter:{}: Was matched",
-                            name,
-                            n
-                        );
-                        return Err(build_err!(self, n, matcher));
+        let mut found = None;
+        'outer: for arg in matcher.arg_names().filter(|n| !self.app.groups.iter().any(|g| &&g.name == n)).filter_map(|name| args!(self.app).find(|a| &a.name == name)) {
+            debugln!( "Validator::validate_conflicts:iter:{};", arg.name );
+            if let Some(ref v) = arg.conflicts_with {
+                for mut conf in v {
+                    debugln!( "Validator::validate_conflicts:iter:{}:iter:{};", arg.name, conf);
+                    if matcher.contains(conf) {
+                        debugln!( "Validator::validate_conflicts:iter:{}:iter:{}: Found;", arg.name, conf);
+                        if let Some(mut grp) = find!(self.app, conf, groups) {
+                            debugln!( "Validator::validate_conflicts:iter:{}:iter:{}: Is a group;", arg.name, conf);
+                            for a in &grp.args {
+                                if a == &arg.name { continue; }
+                                // @TEST neeeds the following tests:
+                                //    * group inside group with arg that is conflict
+                                //    * group inside group, but conflict arg ins't in the group 
+                                //    * group in group with group that is conflict
+                                if matcher.contains(a) && !self.is_group(a) {
+                                    conf = a;
+                                    break;
+                                }
+                            }
+                        }
+                        found = Some((arg.name, conf));
+                        break 'outer;
                     }
                 }
-            } else if matcher.contains(name) {
-                debugln!("Validator::validate_conflicts:iter:{}: Was matched", name);
-                return Err(build_err!(self, *name, matcher));
             }
+        }
+        if let Some((arg, conflict)) = found {
+            matcher.remove(conflict);
+            let usg = self.create_error_usage(matcher, None);
+            let arg = find!(self.app, &arg, args).expect(INTERNAL_ERROR_MSG);
+            let conflict = find!(self.app, conflict, args).map(|a| a.to_string()).expect(INTERNAL_ERROR_MSG);
+            return Err(ClapError::argument_conflict(arg, conflict, &*usg, self.color()));
+        }
+        Ok(())
+    }
+
+    fn validate_group_conflicts(&self, matcher: &mut ArgMatcher<'a>) -> ClapResult<()> {
+        debugln!("Validator::validate_group_conflicts;");
+
+        let mut found = None;
+        for grp in matcher.arg_names().filter(|n| self.app.groups.iter().any(|g| &&g.name == n)).filter_map(|name| groups!(self.app).find(|g| &g.name == name)) {
+            if grp.multiple {
+                continue;
+            }
+            debugln!("Validator::validate_group_conflicts:iter:{};", grp.name );
+            let mut count = 0;
+            let mut names = vec![];
+            for a in &grp.args {
+                if matcher.contains(a) {
+                    count += 1;
+                    names.push(a);
+                }
+            }
+            if count > 1 {
+                found = Some((names[0], names[1]));
+                break;
+            }
+        }
+        if let Some((arg, conflict)) = found {
+            matcher.remove(conflict);
+            let usg = self.create_error_usage(matcher, None);
+            let arg = args!(self.app).find(|a| &&a.name == &arg).expect(INTERNAL_ERROR_MSG);
+            let conflict = args!(self.app).find(|a| &&a.name == &conflict).map(|a| a.to_string()).expect(INTERNAL_ERROR_MSG);
+            return Err(ClapError::argument_conflict(arg, conflict, &*usg, self.color()));
         }
         Ok(())
     }
@@ -364,7 +394,7 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c> {
 
     fn validate_arg_conflicts(&self, a: &Arg<'a, 'b>, matcher: &ArgMatcher<'a>) -> Option<bool>
     {
-        debugln!("Validator::validate_arg_conflicts: a={:?};", a.name);
+        debugln!("Validator::validate_arg_conflicts:{};", a.name);
         a.conflicts_with.as_ref().map(|bl| {
             bl.iter().any(|conf| {
                 matcher.contains(conf) ||

@@ -27,70 +27,67 @@ macro_rules! remove_overriden {
 
 macro_rules! arg_post_processing {
     ($parser:ident, $arg:ident, $matcher:ident) => {
-        debugln!("arg_post_processing!;");
+        debugln!("arg_post_processing!:{};", $arg.name);
         // Handle POSIX overrides
-        debug!("arg_post_processing!: Is '{}' in overrides...", $arg.name);
         if $parser.overrides.contains(&$arg.name) {
-            if let Some(ref name) = find_name_from!($parser.app, &$arg.name, overrides_with, $matcher) {
-                sdebugln!("Yes by {}", name);
+            debugln!("arg_post_processing!:{}: Already in overrides", $arg.name);
+            if let Some(ref name) = find_override!($parser.app, &$arg.name, $matcher) {
                 $matcher.remove(name);
                 remove_overriden!($parser, name);
             }
-        } else { sdebugln!("No"); }
+        }
 
         // Add overrides
-        debug!("arg_post_processing!: Does '{}' have overrides...", $arg.name);
         if let Some(ref or) = $arg.overrides_with {
-            sdebugln!("Yes");
+            debug!("arg_post_processing!:{}: Has overrides", $arg.name);
             $matcher.remove_all(&*or);
             for pa in or { remove_overriden!($parser, pa); }
             $parser.overrides.extend(or);
             vec_remove_all!($parser.required, or.iter());
-        } else { sdebugln!("No"); }
+        }
 
         // Handle conflicts
-        debug!("arg_post_processing!: Does '{}' have conflicts...", $arg.name);
         if let Some(ref bl) = $arg.conflicts_with {
-            sdebugln!("Yes");
+            debugln!("arg_post_processing!:{}: Has conflicts", $arg.name);
 
             for c in bl {
                 // Inject two-way conflicts
-                debug!("arg_post_processing!: Has '{}' already been matched...", c);
-                if $matcher.contains(c) {
-                    sdebugln!("Yes");
-                    $parser.conflicts.push(c);
-                } else {
-                    sdebugln!("No");
-                }
+                debugln!("arg_post_processing!:{}: adding conflict {:?}", $arg.name, c);
+                $parser.conflicts.push(c);
+                // debug!("arg_post_processing!: Has '{}' already been matched...", c);
+                // if $matcher.contains(c) {
+                //     sdebugln!("Yes");
+                //     $parser.conflicts.push(c);
+                // } else {
+                //     sdebugln!("No");
+                // }
             }
 
             $parser.conflicts.extend_from_slice(&*bl);
             vec_remove_all!($parser.overrides, bl.iter());
             // vec_remove_all!($me.required, bl.iter());
-        } else { sdebugln!("No"); }
+        }
 
         // Add all required args which aren't already found in matcher to the master
         // list
-        debug!("arg_post_processing!: Does '{}' have requirements...", $arg.name);
         if let Some(ref reqs) = $arg.requires {
-            sdebugln!("yes");
+            debugln!("arg_post_processing!:{}: Has requirements", $arg.name);
             for n in reqs.iter()
                 .filter(|req| !$matcher.contains(&req))
                 .map(|&name| name) {
                     
                 $parser.required.push(n);
             }
-        } else { sdebugln!("no"); }
-        debug!("arg_post_processing!: Does '{}' have conditional requirements...", $arg.name);
+        }
         if let Some(ref reqs) = $arg.requires {
-            sdebugln!("yes");
+            debugln!("arg_post_processing!:{}: Has conditional requirements", $arg.name);
             for n in reqs.iter()
                 .filter(|req| !$matcher.contains(&req))
                 .map(|&name| name) {
                     
                 $parser.required.push(n);
             }
-        } else { sdebugln!("no"); }
+        }
 
         handle_group_reqs!($parser, $arg);
     };
@@ -98,30 +95,34 @@ macro_rules! arg_post_processing {
 
 macro_rules! handle_group_reqs {
     ($parser:ident, $arg:ident) => ({
-        debugln!("handle_group_reqs!;");
+        debugln!("handle_group_reqs!:{};", $arg.name);
         for grp in &$parser.app.groups {
             let found = if grp.args.contains(&$arg.name) {
                 if let Some(ref reqs) = grp.requires {
-                    debugln!("handle_group_reqs!: Adding {:?} to the required list", reqs);
+                    debugln!("handle_group_reqs!:{}: Adding {:?} to the required list", $arg.name, reqs);
                     $parser.required.extend(reqs);
                 }
                 if let Some(ref bl) = grp.conflicts {
                     $parser.conflicts.extend(bl);
                 }
-                true // What if arg is in more than one group with different reqs?
+                true // @VERIFY What if arg is in more than one group with different reqs?
             } else {
                 false
             };
-            debugln!("handle_group_reqs!:iter: grp={}, found={:?}", grp.name, found);
             if found {
+                debugln!("handle_group_reqs!:{}:iter:{}: found in group", $arg.name, grp.name);
+                // Removes args in this group from the requried list because this group has now
+                // been matched.
+                // @VERIFY how does this interact if one of those args is required for other
+                // reasons?
                 for i in (0 .. $parser.required.len()).rev() {
                     let should_remove = grp.args.contains(&$parser.required[i]);
                     if should_remove { $parser.required.swap_remove(i); }
                 }
-                debugln!("handle_group_reqs!:iter: Adding args from group to conflicts...{:?}", grp.args);
+                debugln!("handle_group_reqs!:{}:iter:{}: Adding {:?} to conflicts", $arg.name, grp.name, grp.args);
                 if !grp.multiple {
                     $parser.conflicts.extend(&grp.args);
-                    debugln!("handle_group_reqs!: removing {:?} from conflicts", $arg.name);
+                    debugln!("handle_group_reqs!:{}:{}: removing from conflicts", $arg.name, grp.name);
                     for i in (0 .. $parser.conflicts.len()).rev() {
                         let should_remove = $parser.conflicts[i] == $arg.name;
                         if should_remove { $parser.conflicts.swap_remove(i); }

@@ -827,28 +827,13 @@ macro_rules! vec_remove_all {
     };
 }
 
-macro_rules! find_matched_that_contains_arg_in {
-    ($app:expr, $arg_name:expr, $from:ident, $matcher:expr) => {{
-        let mut ret = None;
-        for k in $matcher.arg_names() {
-            if let Some(f) = args!($app).find(|a| &a.name == k) {
-                if let Some(ref v) = f.$from {
-                    if v.contains($arg_name) {
-                        ret = Some(f);
-                    }
-                }
-            }
-        }
-        ret
-    }};
-}
-
-macro_rules! find_name_from {
-    ($app:expr, $arg_name:expr, $from:ident, $matcher:expr) => {{
+// @DESIGN can probably be refactored
+macro_rules! find_override {
+    ($app:expr, $arg_name:expr, $matcher:expr) => {{
         let mut ret = None;
         for k in $matcher.arg_names() {
             if let Some(a) = args!($app).find(|a| &a.name == k) {
-                if let Some(ref v) = a.$from {
+                if let Some(ref v) = a.overrides_with {
                     if v.contains($arg_name) {
                         ret = Some(a.name);
                     }
@@ -870,6 +855,18 @@ macro_rules! match_alias {
             .any(|alias| alias == &$to)) || 
             ($a.visible_aliases.is_some() && 
                 $a.visible_aliases.as_ref().unwrap().iter().any(|als| als == &$to))
+    }}
+}
+
+macro_rules! find {
+    ($app:expr, $name:expr, $what:ident) => {{
+        $what!($app)
+            .find(|a| &a.name == $name)
+    }};
+    ($app:expr, $long:expr) => {{
+        args!($app)
+            .filter(|a| a.long.is_some())
+            .find(|a| match_alias!(a, $long, a.long.unwrap()))
     }}
 }
 
@@ -1006,6 +1003,12 @@ macro_rules! args {
     ($app:expr) => {{
         $app.args.iter()
                  .chain($app.global_args.iter())
+    }};
+}
+
+macro_rules! groups {
+    ($app:expr) => {{
+        $app.groups.iter()
     }};
 }
 

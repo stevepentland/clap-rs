@@ -5,7 +5,8 @@ include!("../clap-test.rs");
 
 use clap::{App, Arg, ArgGroup, ErrorKind};
 
-static REQ_GROUP_USAGE: &'static str = "error: The following required arguments were not provided:
+static REQ_GROUP_USAGE: &'static str = 
+"error: The following required arguments were not provided:
     <base|--delete>
 
 USAGE:
@@ -13,14 +14,16 @@ USAGE:
 
 For more information try --help";
 
-static REQ_GROUP_CONFLICT_USAGE: &'static str = "error: The argument '[base]' cannot be used with '--delete'
+static REQ_GROUP_CONFLICT_USAGE: &'static str = 
+"error: The argument '[base]' cannot be used with '--delete'
 
 USAGE:
     clap-test <base|--delete>
 
 For more information try --help";
 
-static REQ_GROUP_CONFLICT_REV: &'static str = "error: The argument '--delete' cannot be used with '[base]'
+static REQ_GROUP_CONFLICT_REV: &'static str = 
+"error: The argument '[base]' cannot be used with '--delete'
 
 USAGE:
     clap-test <base|--delete>
@@ -144,7 +147,7 @@ fn req_group_with_conflict_usage_string() {
                    .args(&["base", "delete"])
                    .required(true));
 
-    test::compare_output(app, "clap-test --delete base", REQ_GROUP_CONFLICT_REV, true);
+    test::compare_output(app, "clap-test --delete base", REQ_GROUP_CONFLICT_USAGE, true);
 }
 
 #[test]
@@ -158,7 +161,7 @@ fn req_group_with_conflict_rev_usage_string() {
 
     test::compare_output(app,
                                  "clap-test base --delete",
-                                 REQ_GROUP_CONFLICT_USAGE,
+                                 REQ_GROUP_CONFLICT_REV,
                                  true);
 }
 
