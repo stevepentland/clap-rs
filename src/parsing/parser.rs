@@ -207,22 +207,6 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
                           global and required",
             a.name
         );
-        if a.is_set(ArgSettings::Last) {
-            assert!(
-                !positionals!(self.app).any(|a| a.is_set(ArgSettings::Last)),
-                "Only one positional argument may have last(true) set. Found two."
-            );
-            assert!(
-                a.long.is_none(),
-                "Flags or Options may not have last(true) set. {} has both a long and last(true) set.",
-                a.name
-            );
-            assert!(
-                a.short.is_none(),
-                "Flags or Options may not have last(true) set. {} has both a short and last(true) set.",
-                a.name
-            );
-        }
         true
     }
 
@@ -245,6 +229,12 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
                 self.positionals.len()
             );
         }
+
+        // verify that
+        debug_assert!(
+            positionals!(self.app).filter(|a| a.is_set(ArgSettings::Last)).count() < 2,
+            "Only one positional argument may have last(true) set. Found two."
+        );
 
         // Next we verify that only the highest index has a .multiple(true) (if any)
         if positionals!(self.app).any(|a| {

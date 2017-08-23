@@ -1,6 +1,76 @@
 extern crate clap;
+extern crate regex;
+
+include!("../clap-test.rs");
 
 use clap::{App, Arg, ErrorKind, ArgSettings};
+
+static MULT_POS_ONE_REQ: &'static str =
+"mult_pos 1.1
+
+USAGE:
+    mult_pos <FILE> [FILES]...
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+ARGS:
+    <FILE>        some file
+    [FILES]...    some file";
+
+static SINGLE_MULT_POS: &'static str =
+"mult_pos 1.1
+
+USAGE:
+    mult_pos [FILE]...
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+ARGS:
+    [FILE]...    some file";
+
+static SINGLE_POS: &'static str =
+"mult_pos 1.1
+
+USAGE:
+    mult_pos [FILE]
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+ARGS:
+    [FILE]    some file";
+
+static SINGLE_REQ_POS: &'static str =
+"mult_pos 1.1
+
+USAGE:
+    mult_pos <FILE>
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+ARGS:
+    <FILE>    some file";
+
+static MULT_POS: &'static str =
+"mult_pos 1.1
+
+USAGE:
+    mult_pos [ARGS]
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+ARGS:
+    [FILE]        some file
+    [FILES]...    some file";
 
 #[test]
 fn only_pos_follow() {
@@ -177,44 +247,44 @@ fn positional_hyphen_does_not_panic() {
 
 #[test]
 fn single_positional_usage_string() {
-    let m = App::new("test")
-        .arg("[FILE] 'some file'")
-        .get_matches_from(vec!["test"]);
-    assert_eq!(m.usage(), "USAGE:\n    test [FILE]");
+    let app = App::new("mult_pos")
+        .version("1.1")
+        .arg("[FILE] 'some file'");
+    test::compare_output(app, "mult_pos --help", SINGLE_POS, false);
 }
 
 #[test]
 fn single_positional_multiple_usage_string() {
-    let m = App::new("test")
-        .arg("[FILE]... 'some file'")
-        .get_matches_from(vec!["test"]);
-    assert_eq!(m.usage(), "USAGE:\n    test [FILE]...");
+    let app = App::new("mult_pos")
+        .version("1.1")
+        .arg("[FILE]... 'some file'");
+    test::compare_output(app, "mult_pos --help", SINGLE_MULT_POS, false);
 }
 
 #[test]
 fn multiple_positional_usage_string() {
-    let m = App::new("test")
+    let app = App::new("mult_pos")
+        .version("1.1")
         .arg("[FILE] 'some file'")
-        .arg("[FILES]... 'some file'")
-        .get_matches_from(vec!["test"]);
-    assert_eq!(m.usage(), "USAGE:\n    test [ARGS]");
+        .arg("[FILES]... 'some file'");
+    test::compare_output(app, "mult_pos --help", MULT_POS, false);
 }
 
 #[test]
 fn multiple_positional_one_required_usage_string() {
-    let m = App::new("test")
+    let app = App::new("mult_pos")
+        .version("1.1")
         .arg("<FILE> 'some file'")
-        .arg("[FILES]... 'some file'")
-        .get_matches_from(vec!["test", "file"]);
-    assert_eq!(m.usage(), "USAGE:\n    test <FILE> [FILES]...");
+        .arg("[FILES]... 'some file'");
+    test::compare_output(app, "mult_pos --help", MULT_POS_ONE_REQ, false);
 }
 
 #[test]
 fn single_positional_required_usage_string() {
-    let m = App::new("test")
-        .arg("<FILE> 'some file'")
-        .get_matches_from(vec!["test", "file"]);
-    assert_eq!(m.usage(), "USAGE:\n    test <FILE>");
+    let app = App::new("mult_pos")
+        .version("1.1")
+        .arg("<FILE> 'some file'");
+    test::compare_output(app, "mult_pos --help", SINGLE_REQ_POS, false);
 }
 
 #[test]
@@ -243,7 +313,7 @@ fn last_positional() {
     let r = App::new("test")
         .arg("<TARGET> 'some target'")
         .arg("[CORPUS] 'some corpus'")
-        .arg(Arg::from("[ARGS]... 'some file'").last(true))
+        .arg(Arg::from("[ARGS]... 'some file'").set(ArgSettings::Last))
         .get_matches_from_safe(vec!["test", "tgt", "--", "arg"]);
     assert!(r.is_ok());
     let m = r.unwrap();
@@ -255,7 +325,7 @@ fn last_positional_no_double_dash() {
     let r = App::new("test")
         .arg("<TARGET> 'some target'")
         .arg("[CORPUS] 'some corpus'")
-        .arg(Arg::from("[ARGS]... 'some file'").last(true))
+        .arg(Arg::from("[ARGS]... 'some file'").set(ArgSettings::Last))
         .get_matches_from_safe(vec!["test", "tgt", "crp", "arg"]);
     assert!(r.is_err());
     assert_eq!(r.unwrap_err().kind, ErrorKind::UnknownArgument);
@@ -266,7 +336,7 @@ fn last_positional_second_to_last_mult() {
     let r = App::new("test")
         .arg("<TARGET> 'some target'")
         .arg("[CORPUS]... 'some corpus'")
-        .arg(Arg::from("[ARGS]... 'some file'").last(true))
+        .arg(Arg::from("[ARGS]... 'some file'").set(ArgSettings::Last))
         .get_matches_from_safe(vec!["test", "tgt", "crp1", "crp2", "--", "arg"]);
     assert!(r.is_ok(), "{:?}", r.unwrap_err().kind);
 }
