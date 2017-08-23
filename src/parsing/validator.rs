@@ -208,7 +208,7 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c> {
         debugln!("Validator::validate_matched_args;");
         for (name, ma) in matcher.iter() {
             debugln!(
-                "Validator::validate_matched_args:iter:{}: vals={:#?}",
+                "Validator::validate_matched_args:iter:{}: vals={:?}",
                 name,
                 ma.vals
             );
@@ -334,7 +334,6 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c> {
         Ok(())
     }
 
-    // @TOOD-v3-alpha: refactor to include requires_ifs
     fn validate_arg_requires(
         &self,
         a: &Arg<'a, 'b>,
@@ -342,19 +341,24 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c> {
         matcher: &ArgMatcher<'a>,
     ) -> ClapResult<()>
     {
-        debugln!("Validator::validate_arg_requires;");
+        debugln!("Validator::validate_arg_requires:{};", a.name);
         if let Some(ref a_reqs) = a.requires {
+            debugln!("Validator::validate_arg_requires:{}: Checking requires;", a.name);
             for name in a_reqs {
+                debugln!("Validator::validate_arg_requires:{}:iter:{};", a.name, name);
                 if !matcher.contains(name) {
                     return self.missing_required_error(matcher, None);
                 }
             }
         }
         if let Some(ref a_reqs) = a.requires_ifs {
-            for &(name, val) in a_reqs {
+            debugln!("Validator::validate_arg_requires:{}: Checking conditional requires;", a.name);
+            for &(val, name) in a_reqs {
+                debugln!("Validator::validate_arg_requires:{}:iter:({}, {});", a.name, name, val);
                 let missing_req =
                     |v| v == val && !matcher.contains(name);
                 if ma.vals.iter().any(missing_req) {
+                    debugln!("Validator::validate_arg_requires:{}:iter:({}, {}): Found missing;", a.name, name, val);
                     return self.missing_required_error(matcher, None);
                 }
             }
