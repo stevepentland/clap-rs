@@ -14,7 +14,7 @@ macro_rules! remove_overriden {
     };
     (@arg $parser:ident, $arg:ident) => {
         remove_overriden!(@remove_requires $parser.required, $arg.requires);
-        remove_overriden!(@remove $parser.conflicts, $arg.conflicts_with);
+        // remove_overriden!(@remove $parser.conflicts, $arg.conflicts_with);
         remove_overriden!(@remove $parser.overrides, $arg.overrides_with);
     };
     ($parser:ident, $name:expr) => {
@@ -50,20 +50,20 @@ macro_rules! arg_post_processing {
         if let Some(ref bl) = $arg.conflicts_with {
             debugln!("arg_post_processing!:{}: Has conflicts", $arg.name);
 
-            for c in bl {
-                // Inject two-way conflicts
-                debugln!("arg_post_processing!:{}: adding conflict {:?}", $arg.name, c);
-                $parser.conflicts.push(c);
-                // debug!("arg_post_processing!: Has '{}' already been matched...", c);
-                // if $matcher.contains(c) {
-                //     sdebugln!("Yes");
-                //     $parser.conflicts.push(c);
-                // } else {
-                //     sdebugln!("No");
-                // }
-            }
+            // for c in bl {
+            //     // Inject two-way conflicts
+            //     debugln!("arg_post_processing!:{}: adding conflict {:?}", $arg.name, c);
+            //     // $parser.conflicts.push(c);
+            //     // debug!("arg_post_processing!: Has '{}' already been matched...", c);
+            //     // if $matcher.contains(c) {
+            //     //     sdebugln!("Yes");
+            //     //     $parser.conflicts.push(c);
+            //     // } else {
+            //     //     sdebugln!("No");
+            //     // }
+            // }
 
-            $parser.conflicts.extend_from_slice(&*bl);
+            // $parser.conflicts.extend_from_slice(&*bl);
             vec_remove_all!($parser.overrides, bl.iter());
             // vec_remove_all!($me.required, bl.iter());
         }
@@ -102,9 +102,9 @@ macro_rules! handle_group_reqs {
                     debugln!("handle_group_reqs!:{}: Adding {:?} to the required list", $arg.name, reqs);
                     $parser.required.extend(reqs);
                 }
-                if let Some(ref bl) = grp.conflicts {
-                    $parser.conflicts.extend(bl);
-                }
+                // if let Some(ref bl) = grp.conflicts {
+                //     $parser.conflicts.extend(bl);
+                // }
                 true // @VERIFY What if arg is in more than one group with different reqs?
             } else {
                 false
@@ -119,15 +119,15 @@ macro_rules! handle_group_reqs {
                     let should_remove = grp.args.contains(&$parser.required[i]);
                     if should_remove { $parser.required.swap_remove(i); }
                 }
-                debugln!("handle_group_reqs!:{}:iter:{}: Adding {:?} to conflicts", $arg.name, grp.name, grp.args);
-                if !grp.multiple {
-                    $parser.conflicts.extend(&grp.args);
-                    debugln!("handle_group_reqs!:{}:{}: removing from conflicts", $arg.name, grp.name);
-                    for i in (0 .. $parser.conflicts.len()).rev() {
-                        let should_remove = $parser.conflicts[i] == $arg.name;
-                        if should_remove { $parser.conflicts.swap_remove(i); }
-                    }
-                }
+                // debugln!("handle_group_reqs!:{}:iter:{}: Adding {:?} to conflicts", $arg.name, grp.name, grp.args);
+                // if !grp.multiple {
+                    // $parser.conflicts.extend(&grp.args);
+                    // debugln!("handle_group_reqs!:{}:{}: removing from conflicts", $arg.name, grp.name);
+                    // for i in (0 .. $parser.conflicts.len()).rev() {
+                        // let should_remove = $parser.conflicts[i] == $arg.name;
+                        // if should_remove { $parser.conflicts.swap_remove(i); }
+                    // }
+                // }
             }
         }
     })

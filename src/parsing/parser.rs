@@ -44,7 +44,7 @@ where
     pub positionals: VecMap<&'a str>,
     pub required: Vec<&'a str>,
     pub req_ifs: Vec<(&'a str, &'b str, &'a str)>,
-    pub conflicts: Vec<&'b str>,
+    // pub conflicts: Vec<&'b str>,
     pub overrides: Vec<&'b str>,
     cache: Option<&'a str>,
 }
@@ -60,7 +60,7 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
             positionals: VecMap::new(),
             required: reqs, 
             req_ifs: Vec::new(),
-            conflicts: Vec::new(),
+            // conflicts: Vec::new(),
             overrides: Vec::new(),
             cache: None,
         };
@@ -73,9 +73,9 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
                 if let Some(ref reqs) = grp.requires {
                     p.required.extend_from_slice(reqs);
                 }
-                if let Some(ref bl) = grp.conflicts {
-                    p.conflicts.extend_from_slice(bl);
-                }
+                // if let Some(ref bl) = grp.conflicts {
+                //     p.conflicts.extend_from_slice(bl);
+                // }
             }
         }
         // Global args are first because of derived display orders
