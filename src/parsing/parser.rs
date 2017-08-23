@@ -173,7 +173,7 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
     fn debug_asserts(&self, a: &Arg) -> bool {
         assert!(
             arg_names!(self.app).filter(|name| name == &a.name).count() == 1,
-            format!("Non-unique argument name: {} is already in use", a.name)
+            format!("Non-unique argument name: '{}' is already in use", a.name)
         );
         if let Some(l) = a.long {
             assert!(
@@ -379,10 +379,9 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
     //     // }
     // }
 
-    // @TODO-v3-alpha: This should only propagate to a particular SC, not all
     pub fn propagate_settings_to(&mut self, sc_name: &str) {
         debugln!(
-            "Parser::propogate_settings_to:{}: self={}",
+            "Parser::propagate_settings_to:{}: self={}",
             sc_name,
             self.app.name
         );
@@ -394,9 +393,9 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
             let gv = self.app._settings.is_set(AS::GlobalVersion) || self.app._g_settings.is_set(AS::GlobalVersion);
 
             if gv && self.app.version.is_some() {
-                debugln!( "Parser::propogate_settings_to:{}: GlobalVersion set", sc_name);
-                debugln!( "Parser::propogate_settings_to:{}: setting version...{:?}", sc_name, self.app.version);
-                debugln!( "Parser::propogate_settings_to:{}: setting long_version...{:?}", sc_name, self.app.long_version);
+                debugln!( "Parser::propagate_settings_to:{}: GlobalVersion set", sc_name);
+                debugln!( "Parser::propagate_settings_to:{}: setting version...{:?}", sc_name, self.app.version);
+                debugln!( "Parser::propagate_settings_to:{}: setting long_version...{:?}", sc_name, self.app.long_version);
                 sc.global_settings.push(AS::GlobalVersion);
                 sc.version = self.app.version;
                 sc.long_version = self.app.long_version;
@@ -409,6 +408,23 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
             }
             sc.term_width = self.app.term_width;
             sc.max_term_width = self.app.max_term_width;
+        }
+    }
+
+    pub fn propagate_globals_to(&mut self, sc_name: &str) {
+        debugln!(
+            "Parser::propagate_globals_to:{}: self={}",
+            sc_name,
+            self.app.name
+        );
+        if let Some(sc) = self.app
+            .subcommands
+            .iter_mut()
+            .find(|sc| sc.name == sc_name)
+        {
+            for arg in &self.app.global_args {
+                sc._add_arg(arg.clone());
+            }
         }
     }
 
@@ -428,10 +444,6 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
         T: Into<OsString> + Clone,
     {
         debugln!("Parser::get_matches_with;");
-
-        // @TODO-v3-alpha:
-        // globals should only be propagated on completions...consider moving this call
-        // self.propagate_globals();
 
         // @TODO-v3-alpha: should display order only be derived if we're going to dispaly it?
         // self.derive_display_order();
@@ -908,6 +920,7 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
         // }
         // mid_string.push_str(" ");
         self.propagate_settings_to(sc_name);
+        self.propagate_globals_to(sc_name);
         if let Some(ref mut sc) = find_subcommand_mut!(self.app, sc_name)
         {
             let mut sc_matcher = ArgMatcher::new();

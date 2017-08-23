@@ -6,7 +6,8 @@ include!("../clap-test.rs");
 
 use clap::{App, AppSettings, ArgSettings, ErrorKind, Arg};
 
-static HELP: &'static str = "clap-test v1.4.8
+static HELP: &'static str = 
+"clap-test v1.4.8
 Kevin K. <kbknapp@gmail.com>
 tests clap library
 
@@ -37,7 +38,8 @@ SUBCOMMANDS:
     help      Prints this message or the help of the given subcommand(s)
     subcmd    tests subcommands";
 
-static SC_NEGATES_REQS: &'static str = "prog 1.0
+static SC_NEGATES_REQS: &'static str = 
+"prog 1.0
 
 USAGE:
     prog --opt <FILE> [PATH]
@@ -57,7 +59,8 @@ SUBCOMMANDS:
     help    Prints this message or the help of the given subcommand(s)
     test";
 
-static ARGS_NEGATE_SC: &'static str = "prog 1.0
+static ARGS_NEGATE_SC: &'static str = 
+"prog 1.0
 
 USAGE:
     prog [FLAGS] [OPTIONS] [PATH]
@@ -78,7 +81,8 @@ SUBCOMMANDS:
     help    Prints this message or the help of the given subcommand(s)
     test";
 
-static AFTER_HELP: &'static str = "some text that comes before the help
+static AFTER_HELP: &'static str = 
+"some text that comes before the help
 
 clap-test v1.4.8
 tests clap library
@@ -92,7 +96,8 @@ FLAGS:
 
 some text that comes after the help";
 
-static HIDDEN_ARGS: &'static str = "prog 1.0
+static HIDDEN_ARGS: &'static str = 
+"prog 1.0
 
 USAGE:
     prog [FLAGS] [OPTIONS]
@@ -105,7 +110,8 @@ FLAGS:
 OPTIONS:
     -o, --opt <FILE>    tests options";
 
-static SC_HELP: &'static str = "clap-test-subcmd 0.1
+static SC_HELP: &'static str = 
+"clap-test-subcmd 0.1
 Kevin K. <kbknapp@gmail.com>
 tests subcommands
 
@@ -125,7 +131,8 @@ ARGS:
     [scpositional]    tests positionals";
 
 // Using number_of_values(1) with multiple(true) misaligns help message
-static ISSUE_760: &'static str = "ctest 0.1
+static ISSUE_760: &'static str = 
+"ctest 0.1
 
 USAGE:
     ctest [OPTIONS]
@@ -138,7 +145,8 @@ OPTIONS:
     -O, --opt <opt>             tests options
     -o, --option <option>...    tests options";
 
-static RIPGREP_USAGE: &'static str = "ripgrep 0.5
+static RIPGREP_USAGE: &'static str = 
+"ripgrep 0.5
 
 USAGE:
     rg [OPTIONS] <pattern> [<path> ...]
@@ -151,7 +159,8 @@ FLAGS:
     -V, --version    Prints version information";
 
 
-static MULTI_SC_HELP: &'static str = "ctest-subcmd-multi 0.1
+static MULTI_SC_HELP: &'static str = 
+"ctest-subcmd-multi 0.1
 Kevin K. <kbknapp@gmail.com>
 tests subcommands
 
@@ -166,7 +175,8 @@ FLAGS:
 OPTIONS:
     -o, --option <scoption>...    tests options";
 
-static ISSUE_626_CUTOFF: &'static str = "ctest 0.1
+static ISSUE_626_CUTOFF: &'static str = 
+"ctest 0.1
 
 USAGE:
     ctest [OPTIONS]
@@ -185,7 +195,8 @@ OPTIONS:
                          tea. Many cafés also serve some type of food,
                          such as light snacks, muffins, or pastries.";
 
-static ISSUE_626_PANIC: &'static str = "ctest 0.1
+static ISSUE_626_PANIC: &'static str = 
+"ctest 0.1
 
 USAGE:
     ctest [OPTIONS]
@@ -204,7 +215,8 @@ OPTIONS:
             souvent une contribution majeure aux
             exportations des régions productrices.";
 
-static HIDE_POS_VALS: &'static str = "ctest 0.1
+static HIDE_POS_VALS: &'static str = 
+"ctest 0.1
 
 USAGE:
     ctest [OPTIONS]
@@ -217,7 +229,8 @@ OPTIONS:
     -c, --cafe <FILE>    A coffeehouse, coffee shop, or café.
     -p, --pos <VAL>      Some vals [values: fast, slow]";
 
-static FINAL_WORD_WRAPPING: &'static str = "ctest 0.1
+static FINAL_WORD_WRAPPING: &'static str = 
+"ctest 0.1
 
 USAGE:
     ctest
@@ -231,7 +244,8 @@ FLAGS:
             version
             information";
 
-static OLD_NEWLINE_CHARS: &'static str = "ctest 0.1
+static OLD_NEWLINE_CHARS: &'static str = 
+"ctest 0.1
 
 USAGE:
     ctest [FLAGS]
@@ -242,7 +256,8 @@ FLAGS:
                      (Defaults to something)
     -V, --version    Prints version information";
 
-static WRAPPING_NEWLINE_CHARS: &'static str = "ctest 0.1
+static WRAPPING_NEWLINE_CHARS: &'static str = 
+"ctest 0.1
 
 USAGE:
     ctest [mode]
@@ -259,7 +274,8 @@ ARGS:
               m, med, medium    Copy-friendly, 8
               characters, contains symbols.";
 
-static ISSUE_688: &'static str = "ctest 0.1
+static ISSUE_688: &'static str = 
+"ctest 0.1
 
 USAGE:
     ctest [OPTIONS]
@@ -273,7 +289,8 @@ OPTIONS:
                              images. The default is Linear (Bilinear). [values: Nearest, Linear, Cubic, Gaussian,
                              Lanczos3]";
 
-static ISSUE_702: &'static str = "myapp 1.0
+static ISSUE_702: &'static str = 
+"myapp 1.0
 foo
 bar
 
@@ -293,7 +310,8 @@ ARGS:
     [arg1]       some option
     [arg2]...    some option";
 
-static ISSUE_777: &'static str = "A app with a crazy very long long
+static ISSUE_777: &'static str = 
+"A app with a crazy very long long
 long name hahaha 1.0
 Some Very Long Name and crazy long
 email <email@server.com>
@@ -311,7 +329,8 @@ FLAGS:
             Prints version
             information";
 
-static CUSTOM_VERSION_AND_HELP: &'static str = "customize 0.1
+static CUSTOM_VERSION_AND_HELP: &'static str = 
+"customize 0.1
 Nobody <odysseus@example.com>
 You can customize the version and help text
 
@@ -322,7 +341,8 @@ FLAGS:
     -H, --help       Print help information
     -v, --version    Print version information";
 
-static LAST_ARG: &'static str = "last 0.1
+static LAST_ARG: &'static str = 
+"last 0.1
 
 USAGE:
     last <TARGET> [CORPUS] [-- <ARGS>...]
@@ -333,10 +353,11 @@ FLAGS:
 
 ARGS:
     <TARGET>     some
-    <CORPUS>     some
-    <ARGS>...    some";
+    [CORPUS]     some
+    [ARGS]...    some";
 
-static LAST_ARG_SC: &'static str = "last 0.1
+static LAST_ARG_SC: &'static str = 
+"last 0.1
 
 USAGE:
     last <TARGET> [CORPUS] [-- <ARGS>...]
@@ -348,14 +369,15 @@ FLAGS:
 
 ARGS:
     <TARGET>     some
-    <CORPUS>     some
-    <ARGS>...    some
+    [CORPUS]     some
+    [ARGS]...    some
 
 SUBCOMMANDS:
     help    Prints this message or the help of the given subcommand(s)
     test    some";
 
-static LAST_ARG_REQ: &'static str = "last 0.1
+static LAST_ARG_REQ: &'static str = 
+"last 0.1
 
 USAGE:
     last <TARGET> [CORPUS] -- <ARGS>...
@@ -366,10 +388,11 @@ FLAGS:
 
 ARGS:
     <TARGET>     some
-    <CORPUS>     some
+    [CORPUS]     some
     <ARGS>...    some";
 
-static LAST_ARG_REQ_SC: &'static str = "last 0.1
+static LAST_ARG_REQ_SC: &'static str = 
+"last 0.1
 
 USAGE:
     last <TARGET> [CORPUS] -- <ARGS>...
@@ -381,14 +404,15 @@ FLAGS:
 
 ARGS:
     <TARGET>     some
-    <CORPUS>     some
+    [CORPUS]     some
     <ARGS>...    some
 
 SUBCOMMANDS:
     help    Prints this message or the help of the given subcommand(s)
     test    some";
 
-static HIDE_DEFAULT_VAL: &'static str = "default 0.1
+static HIDE_DEFAULT_VAL: &'static str = 
+"default 0.1
 
 USAGE:
     default [OPTIONS]
@@ -400,15 +424,16 @@ FLAGS:
 OPTIONS:
         --arg <argument>    Pass an argument to the program. [default: default-argument]";
 
-static LAST_ARG_USAGE: &'static str = "flamegraph 0.1
+static LAST_ARG_USAGE: &'static str = 
+"flamegraph 0.1
 
 USAGE:
     flamegraph [FLAGS] [OPTIONS] [BINFILE] [-- <ARGS>...]
 
 FLAGS:
     -h, --help       Prints help information
-    -V, --version    Prints version information
     -v, --verbose    Prints out more stuff.
+    -V, --version    Prints version information
 
 OPTIONS:
     -f, --frequency <HERTZ>    The sampling frequency.
@@ -947,15 +972,16 @@ fn hidden_default_val() {
     test::compare_output(app2, "default --help", HIDE_DEFAULT_VAL, false);
 }
 
+// @TODO-v3-release: need way to override and handle help in user code
 #[test]
 fn override_help() {
     let m = App::new("test")
         .author("Kevin K.")
         .about("tests stuff")
         .version("1.3")
-        .arg(Arg::from("-H, --help 'some help'"))
+        .mut_arg("help", |a| a.short("H").help("some help"))
         .get_matches_from_safe(vec!["test", "--help"]);
 
-    assert!(m.is_ok());
-    assert!(m.unwrap().is_present("help"));
+    assert!(m.is_err());
+    assert_eq!(m.unwrap_err().kind, ErrorKind::HelpDisplayed);
 }

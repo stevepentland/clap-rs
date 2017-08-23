@@ -155,7 +155,6 @@ impl<'a, 'b> App<'a, 'b> {
     /// ```
     pub fn new<S: Into<String>>(n: S) -> Self { 
         let mut app = App { name: n.into(), ..Default::default() };
-        app._create_help_and_version();
         app
     }
 
@@ -794,7 +793,7 @@ impl<'a, 'b> App<'a, 'b> {
 
     #[doc(hidden)]
     #[inline]
-    fn _add_arg(&mut self, arg: Arg<'a, 'b>) {
+    pub fn _add_arg(&mut self, arg: Arg<'a, 'b>) {
         if arg.is_set(ArgSettings::Global) {
             self.global_args.push(arg);
         } else {
@@ -802,11 +801,16 @@ impl<'a, 'b> App<'a, 'b> {
         }
     }
     
-    /// @DOCS @TODO-v3-release: add docs
+    /// @DOCS @TODO-v3-beta: add docs
     pub fn mut_arg<F>(mut self, arg: &str, f: F) -> Self
     where
         F: Fn(Arg<'a, 'b>) -> Arg<'a, 'b>,
     {
+        if arg == "help" {
+            self._create_help();
+        } else if arg == "version" {
+            self._create_version();
+        }
         let mut idx = 0;
         let mut found = false;
         for (i, a) in self.args.iter().enumerate() {
@@ -1554,26 +1558,8 @@ impl<'a, 'b> App<'a, 'b> {
                 s.version = self.version;
             }
         }
-        let no_help = self._settings.is_set(AppSettings::DisableHelp);
-        let no_ver = self._settings.is_set(AppSettings::DisableVersion);
-        if no_help {
-            for i in (0..self.args.len()).rev() {
-                let found = "help" == self.args[i].name;
-                if found {
-                    self.args.swap_remove(i);
-                    break;
-                }
-            }
-        }
-        if no_ver {
-            for i in (0..self.args.len()).rev() {
-                let found = "version" == self.args[i].name;
-                if found {
-                    self.args.swap_remove(i);
-                    break;
-                }
-            }
-        }
+
+        self._create_help_and_version();
 
         let mut pos = 1;
         for a in self.args.iter_mut().chain(self.global_args.iter_mut()) {
@@ -1595,21 +1581,37 @@ impl<'a, 'b> App<'a, 'b> {
 
     #[doc(hidden)]
     fn _create_help_and_version(&mut self) {
-        debugln!("App::_create_help_and_version;");
-        debugln!("App::_create_help_and_version: Building --help");
-        let mut help = Arg::new("help")
-            .long("help")
-            .short("h")
-            .help("Prints help information");
-        help._derived_order = 999; // 999 is arbitrarily high to ensure it's last
-        self._add_arg(help);
-        debugln!("App::_create_help_and_version: Building --version");
-        let mut ver = Arg::new("version")
-            .long("version")
-            .help("Prints version information")
-            .short("V");
-        ver._derived_order = 999; // 999 is arbitrarily high to ensure it's last
-        self._add_arg(ver);
+        self._create_help();
+        self._create_version();
+    }
+
+    #[doc(hidden)]
+    fn _create_help(&mut self) {
+        let no_help = self._settings.is_set(AppSettings::DisableHelp) || self.args.iter().any(|a| a.name == "help");
+        if !no_help {
+            debugln!("App::_create_help_and_version: Building --help");
+            let mut help = Arg::new("help")
+                .long("help")
+                .short("h")
+                .help("Prints help information");
+            help._derived_order = 999; // 999 is arbitrarily high to ensure it's last
+            self._add_arg(help);
+        }
+    }
+
+    #[doc(hidden)]
+    fn _create_version(&mut self) {
+        let no_ver = self._settings.is_set(AppSettings::DisableVersion) || self.args.iter().any(|a| a.name == "version");
+        if !no_ver {
+            debugln!("App::_create_help_and_version;");
+            debugln!("App::_create_help_and_version: Building --version");
+            let mut ver = Arg::new("version")
+                .long("version")
+                .help("Prints version information")
+                .short("V");
+            ver._derived_order = 999; // 999 is arbitrarily high to ensure it's last
+            self._add_arg(ver);
+        }
     }
 
     //
