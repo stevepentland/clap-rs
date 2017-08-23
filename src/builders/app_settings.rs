@@ -8,6 +8,7 @@ bitflags! {
         const SC_NEGATE_REQS       = 1;
         const SC_REQUIRED          = 1 << 1;
         const A_REQUIRED_ELSE_HELP = 1 << 2;
+        // @TODO-v3-beta: remove
         const GLOBAL_VERSION       = 1 << 3;
         const VERSIONLESS_SC       = 1 << 4;
         const UNIFIED_HELP         = 1 << 5;
@@ -87,6 +88,7 @@ impl AppFlags {
         DeriveDisplayOrder => DERIVE_DISP_ORDER,
         DisableHelpSubcommand => DISABLE_HELP_SC,
         DisableVersion => DISABLE_VERSION,
+        // @TODO-v3-beta: remove
         GlobalVersion => GLOBAL_VERSION,
         HidePossibleValuesInHelp => NO_POS_VALUES,
         Hidden => HIDDEN,
@@ -559,25 +561,8 @@ pub enum AppSettings {
     /// [`SubCommand`]: ./struct.SubCommand.html
     DeriveDisplayOrder,
 
-    /// Specifies to use the version of the current command for all child [`SubCommand`]s.
-    /// (Defaults to `false`; subcommands have independant version strings from their parents.)
-    ///
-    /// **NOTE:** The version for the current command **and** this setting must be set **prior** to
-    /// adding any child subcommands
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// # use clap::{App, Arg, SubCommand, AppSettings};
-    /// App::new("myprog")
-    ///     .version("v1.1")
-    ///     .set(AppSettings::GlobalVersion)
-    ///     .subcommand(App::new("test"))
-    ///     .get_matches();
-    /// // running `$ myprog test --version` will display
-    /// // "myprog-test v1.1"
-    /// ```
-    /// [`SubCommand`]: ./struct.SubCommand.html
+    /// Deprecated
+    #[deprecated(since = "2.27.0", note = "Use `App::mut_arg(\"version\", |v| v.set(ArgSettings::Global))` instead")]
     GlobalVersion,
 
     /// Specifies that this [`SubCommand`] should be hidden from help messages
