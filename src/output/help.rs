@@ -560,7 +560,7 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
             .filter(|arg| !arg.is_set(ArgSettings::Hidden))
             .count() > 0;
         let opts = self.parser.has_opts();
-        let subcmds = self.parser.has_subcommands();
+        let subcmds = self.parser.has_visible_subcommands();
 
         let unified_help = self.parser.is_set(AppSettings::UnifiedHelpMessage);
 

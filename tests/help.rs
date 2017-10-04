@@ -59,6 +59,22 @@ SUBCOMMANDS:
     help    Prints this message or the help of the given subcommand(s)
     test";
 
+static ISSUE_1046_HIDDEN_SCS: &'static str = "prog 1.0
+
+USAGE:
+    prog [FLAGS] [OPTIONS] [PATH]
+
+FLAGS:
+    -f, --flag       testing flags
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+OPTIONS:
+    -o, --opt <FILE>    tests options
+
+ARGS:
+    [PATH]    some";
+
 static ARGS_NEGATE_SC: &'static str = 
 "prog 1.0
 
@@ -984,4 +1000,15 @@ fn override_help() {
 
     assert!(m.is_err());
     assert_eq!(m.unwrap_err().kind, ErrorKind::HelpDisplayed);
+}
+
+#[test]
+fn issue_1046_hidden_scs() {
+    let app = App::new("prog")
+        .version("1.0")
+        .arg("-f, --flag 'testing flags'")
+        .arg("-o, --opt [FILE] 'tests options'")
+        .arg(Arg::new("PATH").help("some"))
+        .subcommand(App::new("test").set(AppSettings::Hidden));
+    test::compare_output(app, "prog --help", ISSUE_1046_HIDDEN_SCS, false);
 }

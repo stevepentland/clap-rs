@@ -1606,6 +1606,11 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
     pub fn has_subcommands(&self) -> bool { !self.app.subcommands.is_empty() }
 
     #[inline]
+    pub fn has_visible_subcommands(&self) -> bool { 
+        self.has_subcommands() && self.app.subcommands.iter().filter(|sc| sc.name != "help").any(|sc| !sc.is_set(AS::Hidden))
+    }
+
+    #[inline]
     pub fn is_group(&self, name: &str) -> bool { find!(self.app, &name, groups).is_some() }
 
     // #[inline]
@@ -1622,12 +1627,4 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c>
     // pub fn has_visible_positionals(&self) -> bool {
     //     positionals!(self.app).any(|p| !p._settings.is_set(ArgSettings::Hidden))
     // }
-
-    #[inline]
-    pub fn has_visible_subcommands(&self) -> bool {
-        if self.app.subcommands.is_empty() {
-            return false;
-        }
-        self.app.subcommands.iter().any(|s| !s.is_set(AS::Hidden))
-    }
 }
