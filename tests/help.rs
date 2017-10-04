@@ -6,6 +6,27 @@ include!("../clap-test.rs");
 
 use clap::{App, AppSettings, ArgSettings, ErrorKind, Arg};
 
+static LONG_ABOUT: &'static str = "myapp 1.0
+foo
+something really really long, with
+multiple lines of text
+that should be displayed
+
+USAGE:
+    myapp [arg1]
+
+FLAGS:
+    -h, --help       
+            Prints help information
+
+    -V, --version    
+            Prints version information
+
+
+ARGS:
+    [arg1]    
+            some option";
+
 static HELP: &'static str = 
 "clap-test v1.4.8
 Kevin K. <kbknapp@gmail.com>
@@ -1011,4 +1032,15 @@ fn issue_1046_hidden_scs() {
         .arg(Arg::new("PATH").help("some"))
         .subcommand(App::new("test").set(AppSettings::Hidden));
     test::compare_output(app, "prog --help", ISSUE_1046_HIDDEN_SCS, false);
+}
+
+#[test]
+fn issue_1043_long_about() {
+    let app = App::new("myapp")
+        .version("1.0")
+        .author("foo")
+        .about("bar")
+        .long_about("something really really long, with\nmultiple lines of text\nthat should be displayed")
+        .arg(Arg::new("arg1").help("some option"));
+    test::compare_output(app, "myapp --help", LONG_ABOUT, false);
 }

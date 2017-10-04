@@ -671,8 +671,22 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
         if let Some(author) = self.parser.app.author {
             write_thing!(author)
         }
-        if let Some(about) = self.parser.app.about {
-            write_thing!(about)
+        if self.use_long {
+            if let Some(about) = self.parser.app.long_about {
+                debugln!("Help::write_default_help: writing long about");
+                write_thing!(about)
+            } else if let Some(about) = self.parser.app.about {
+                debugln!("Help::write_default_help: writing about");
+                write_thing!(about)
+            }
+        } else {
+           if let Some(about) = self.parser.app.about {
+                debugln!("Help::write_default_help: writing about");
+                write_thing!(about)
+            } else if let Some(about) = self.parser.app.long_about {
+                debugln!("Help::write_default_help: writing long about");
+                write_thing!(about)
+            }
         }
 
         color!(self, w, "\nUSAGE:", warning)?;
@@ -906,6 +920,11 @@ impl<'a, 'b, 'c, 'd> HelpWriter<'a, 'b, 'c, 'd> {
                         "{}",
                         self.parser.app.about.unwrap_or("unknown about")
                     )?;
+                }
+                b"long-about" => {
+                    write!(w,
+                           "{}",
+                           self.parser.app.long_about.unwrap_or("unknown about"))?;
                 }
                 b"usage" => {
                     write!(
