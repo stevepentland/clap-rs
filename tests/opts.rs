@@ -364,3 +364,21 @@ fn issue_665() {
     assert!(res.is_err());
     assert_eq!(res.unwrap_err().kind, ErrorKind::EmptyValue);
 }
+
+#[test]
+fn issue_1044_require_equals_min_values_zero() {
+    let res = App::new("prog")
+        .arg(Arg::new("cfg")
+            .require_equals(true)
+            .takes_value(true)
+            .min_values(0)
+            .long("config"))
+        .arg(Arg::new("cmd"))
+        .get_matches_from_safe(vec![
+            "prog", "--config", "cmd"
+        ]);
+    assert!(res.is_ok());
+    let m = res.unwrap();
+    assert!(m.is_present("cfg"));
+    assert_eq!(m.value_of("cmd"), Some("cmd"));
+}
