@@ -6,7 +6,7 @@ use std::os::unix::ffi::OsStrExt;
 use std::iter::Peekable;
 
 // Third Party
-use vec_map::VecMap;
+use map::VecMap;
 
 // Internal
 use INTERNAL_ERROR_MSG;

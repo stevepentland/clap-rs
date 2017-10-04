@@ -547,6 +547,7 @@ extern crate serde;
 #[macro_use]
 extern crate bitflags;
 extern crate unicode_segmentation;
+#[cfg(feature = "vec_map")]
 extern crate vec_map;
 extern crate unicode_width;
 
@@ -569,6 +570,7 @@ mod builders;
 mod matched;
 mod output;
 mod parsing;
+mod map;
 /// @DOCS @TODO-v3-release: add docs
 pub mod utils;
 

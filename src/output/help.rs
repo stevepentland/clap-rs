@@ -16,7 +16,7 @@ use unicode_width::UnicodeWidthStr;
 use term_size;
 #[cfg(feature = "wrap_help")]
 use textwrap;
-use vec_map::VecMap;
+use map::VecMap;
 
 #[cfg(not(feature = "wrap_help"))]
 mod term_size {

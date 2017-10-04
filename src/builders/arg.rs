@@ -12,7 +12,7 @@ use std::os::unix::ffi::OsStrExt;
 #[cfg(feature = "yaml")]
 use std::collections::BTreeMap;
 
-use vec_map::VecMap;
+use map::VecMap;
 // @TODO-v3-beta: remove
 #[cfg(feature = "yaml")]
 use yaml_rust::Yaml;
@@ -2978,7 +2978,7 @@ impl<'n, 'e> fmt::Debug for Arg<'n, 'e> {
 mod test {
     use ArgSettings;
     use super::Arg;
-    use vec_map::VecMap;
+    use map::VecMap;
 
     // Flags
     #[test]

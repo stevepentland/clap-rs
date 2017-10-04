@@ -17,7 +17,6 @@ A simple to use, efficient, and full featured  Command Line Argument Parser
 
 [dependencies]
 bitflags              = "0.9"
-vec_map               = "0.8"
 unicode-width         = "0.1.4"
 unicode-segmentation  = "1.2.0" 
 textwrap  = { version = "0.7.0",  optional = true }
@@ -29,13 +28,14 @@ clippy    = { version = "~0.0.131", optional = true }
 atty      = { version = "0.2.2",  optional = true }
 serde     = { version = "1.0.0", optional = true }
 serde_derive = {version = "1.0.0", optional = true } 
+vec_map   = { version = "0.8", optional = true}
 
 [dev-dependencies]
 regex = "0.2"
 lazy_static = "0.2"
 
 [features]
-default     = ["suggestions", "color", "wrap_help"]
+default     = ["suggestions", "color", "wrap_help", "vec_map"]
 suggestions = ["strsim"]
 color       = ["ansi_term", "atty"]
 wrap_help   = ["term_size", "textwrap"]
