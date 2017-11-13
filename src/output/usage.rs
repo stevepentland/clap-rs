@@ -85,7 +85,7 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c> {
         // supporting multiple values
         if opts!(self.app).any(|o| o.is_set(ArgSettings::Multiple)) &&
             positionals!(self.app).any(|p| !p.is_set(ArgSettings::Required)) &&
-            !self.has_visible_subcommands() && !has_last
+            !(self.has_visible_subcommands() || self.is_set(AS::AllowExternalSubcommands)) && !has_last
         {
             usage.push_str(" [--]");
         }
@@ -122,7 +122,7 @@ impl<'a, 'b, 'c> Parser<'a, 'b, 'c> {
         }
 
         // incl_reqs is only false when this function is called recursively
-        if self.has_visible_subcommands() && incl_reqs {
+        if self.has_visible_subcommands() && incl_reqs || self.is_set(AS::AllowExternalSubcommands) {
             if self.is_set(AS::SubcommandsNegateReqs) || self.is_set(AS::ArgsNegateSubcommands) {
                 if !self.is_set(AS::ArgsNegateSubcommands) {
                     usage.push_str("\n    ");

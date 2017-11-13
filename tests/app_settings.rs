@@ -7,6 +7,15 @@ include!("../clap-test.rs");
 
 static GLOBAL_VERSION: &'static str = "gver-sub1 v1.1";
 
+static ALLOW_EXT_SC: &'static str = "clap-test v1.4.8
+
+USAGE:
+    clap-test [SUBCOMMAND]
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information";
+
 static DONT_COLLAPSE_ARGS: &'static str = "clap-test v1.4.8
 
 USAGE:
@@ -523,4 +532,12 @@ fn allow_missing_positional() {
     let m = m.unwrap();
     assert_eq!(m.value_of("src"), Some("src"));
     assert_eq!(m.value_of("dest"), Some("file"));
+}
+
+#[test]
+fn issue_1093_allow_ext_sc() {
+    let app = App::new("clap-test")
+        .version("v1.4.8")
+        .set(AppSettings::AllowExternalSubcommands);
+    test::compare_output(app, "clap-test --help", ALLOW_EXT_SC, false);
 }
